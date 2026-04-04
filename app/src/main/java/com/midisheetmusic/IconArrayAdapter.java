@@ -12,14 +12,21 @@
 
 package com.midisheetmusic;
 
-import java.util.*;
+import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.BitmapFactory;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import android.widget.*;
-import android.view.*;
-import android.content.*;
-import android.content.res.*;
-import android.graphics.*;
+
+import java.util.List;
 
 /**
  *  The ListAdapter for displaying the list of songs,
@@ -58,8 +65,7 @@ class IconArrayAdapter<T> extends ArrayAdapter<T> {
     @Override
     public View getView(int position, View convertView, @NonNull ViewGroup parent) {
         if (convertView == null) {
-            // TODO: Make linter happy (Avoid passing null as the view root)
-            convertView = inflater.inflate(R.layout.choose_song_item, null);
+            convertView = inflater.inflate(R.layout.choose_song_item, parent, false);
          }
          TextView text = convertView.findViewById(R.id.choose_song_name);
          ImageView image = convertView.findViewById(R.id.choose_song_icon);

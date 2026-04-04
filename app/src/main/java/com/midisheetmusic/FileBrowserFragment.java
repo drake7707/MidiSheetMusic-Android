@@ -50,11 +50,6 @@ public class FileBrowserFragment extends Fragment {
         loadDirectory(last != null ? last : rootdir);
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
-
     private void loadDirectory(String newDirectory) {
         if ("../".equals(newDirectory)) {
             try {

@@ -56,7 +56,7 @@ public class RecentSongsFragment extends Fragment {
                 JSONArray jsonArray = new JSONArray(recentFilesString);
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject obj = jsonArray.getJSONObject(i);
-                    FileUri file = FileUri.fromJson(obj, requireActivity());
+                    FileUri file = FileUri.fromJson(obj);
                     if (file != null) filelist.add(file);
                 }
             } catch (Exception e) {

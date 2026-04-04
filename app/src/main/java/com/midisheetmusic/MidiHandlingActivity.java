@@ -29,9 +29,13 @@ public abstract class MidiHandlingActivity extends AbstractSingleMidiActivity {
 
     @Override
     public void onMidiInputDeviceAttached(@NonNull MidiInputDevice midiInputDevice) {
-        OnMidiDeviceStatus(true);
-        ((Button)this.findViewById(R.id.btn_midi)).setTextColor(Color.BLUE);
-        log("MIDI Input device connected: " + midiInputDevice.getManufacturerName() + " - " + midiInputDevice.getProductName());
+        String deviceName = midiInputDevice.getManufacturerName() + " - " + midiInputDevice.getProductName();
+        runOnUiThread(() -> {
+            OnMidiDeviceStatus(true);
+            Button btn = this.findViewById(R.id.btn_midi);
+            if (btn != null) btn.setTextColor(Color.BLUE);
+        });
+        log("MIDI Input device connected: " + deviceName);
     }
 
     @Override
@@ -45,7 +49,7 @@ public abstract class MidiHandlingActivity extends AbstractSingleMidiActivity {
 
     @Override
     public void onMidiInputDeviceDetached(@NonNull MidiInputDevice midiInputDevice) {
-        OnMidiDeviceStatus(false);
+        runOnUiThread(() -> OnMidiDeviceStatus(false));
         log("MIDI Input device disconnected");
     }
 
@@ -81,7 +85,7 @@ public abstract class MidiHandlingActivity extends AbstractSingleMidiActivity {
 
     @Override
     public void onMidiNoteOn(@NonNull MidiInputDevice midiInputDevice, int i, int i1, int note, int velocity) {
-        OnMidiNote(note, true);
+        runOnUiThread(() -> OnMidiNote(note, true));
     }
 
     @Override

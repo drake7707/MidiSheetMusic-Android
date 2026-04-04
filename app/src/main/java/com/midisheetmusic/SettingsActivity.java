@@ -13,15 +13,20 @@
 
 package com.midisheetmusic;
 
-import android.app.*;
-import android.content.*;
-import android.os.*;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
 import android.view.MenuItem;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-import androidx.preference.*;
+import androidx.preference.ListPreference;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceScreen;
+import androidx.preference.SwitchPreferenceCompat;
 
 /**
  * This activity is created by the "Settings" menu option.
@@ -58,8 +63,13 @@ public class SettingsActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.settings_activity);
-        options = (MidiOptions) getIntent().getSerializableExtra(settingsID);
-        defaultOptions = (MidiOptions) getIntent().getSerializableExtra(defaultSettingsID);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            options = getIntent().getSerializableExtra(settingsID, MidiOptions.class);
+            defaultOptions = getIntent().getSerializableExtra(defaultSettingsID, MidiOptions.class);
+        } else {
+            options = (MidiOptions) getIntent().getSerializableExtra(settingsID);
+            defaultOptions = (MidiOptions) getIntent().getSerializableExtra(defaultSettingsID);
+        }
 
         // Pass options to the fragment
         Fragment settingsFragment = new SettingsFragment();
@@ -137,8 +147,13 @@ public class SettingsActivity extends AppCompatActivity {
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             if (getArguments() != null) {
-                options = (MidiOptions) getArguments().getSerializable(SettingsActivity.settingsID);
-                defaultOptions = (MidiOptions) getArguments().getSerializable(SettingsActivity.defaultSettingsID);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    options = getArguments().getSerializable(SettingsActivity.settingsID, MidiOptions.class);
+                    defaultOptions = getArguments().getSerializable(SettingsActivity.defaultSettingsID, MidiOptions.class);
+                } else {
+                    options = (MidiOptions) getArguments().getSerializable(SettingsActivity.settingsID);
+                    defaultOptions = (MidiOptions) getArguments().getSerializable(SettingsActivity.defaultSettingsID);
+                }
             }
             context = getPreferenceManager().getContext();
             createView();

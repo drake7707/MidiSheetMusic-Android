@@ -105,8 +105,4 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     /** Always use landscape mode for this activity. */
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-    }
 }

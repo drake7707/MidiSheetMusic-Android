@@ -184,6 +184,7 @@ public class MidiPlayer extends LinearLayout {
     }
 
     /** Create the rewind, play, stop, and fast forward buttons */
+    @SuppressWarnings("deprecation")
     void init() {
         inflate(activity, R.layout.player_toolbar, this);
 
@@ -222,13 +223,27 @@ public class MidiPlayer extends LinearLayout {
                             rewindButton.getWidth() + fastFwdButton.getWidth() + midiButton.getWidth() +
                             leftHandButton.getWidth() + rightHandButton.getWidth() + pianoButton.getWidth() +
                             settingsButton.getWidth();
-                    int screenwidth = activity.getWindowManager().getDefaultDisplay().getWidth();
+                    int screenwidth;
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                        android.util.DisplayMetrics metrics = new android.util.DisplayMetrics();
+                        activity.getDisplay().getRealMetrics(metrics);
+                        screenwidth = metrics.widthPixels;
+                    } else {
+                        android.graphics.Point size = new android.graphics.Point();
+                        activity.getWindowManager().getDefaultDisplay().getSize(size);
+                        screenwidth = size.x;
+                    }
                     speedBar.setLayoutParams(
                             new LayoutParams(screenwidth - iconsWidth - 16, speedBar.getHeight()));
                 }
         );
 
-        speedBar.getProgressDrawable().setColorFilter(Color.parseColor("#00BB87"), PorterDuff.Mode.SRC_IN);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            speedBar.getProgressDrawable().setColorFilter(
+                    new android.graphics.BlendModeColorFilter(Color.parseColor("#00BB87"), android.graphics.BlendMode.SRC_IN));
+        } else {
+            speedBar.getProgressDrawable().setColorFilter(Color.parseColor("#00BB87"), PorterDuff.Mode.SRC_IN);
+        }
         speedBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
                 // If speed bar is between 97 and 103 approximate it to 100

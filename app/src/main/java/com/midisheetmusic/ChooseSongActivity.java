@@ -28,6 +28,10 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.lang.ref.WeakReference;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 /**
  * ChooseSongActivity is a tabbed view for choosing a song to play.
  * There are 3 tabs:
@@ -39,11 +43,13 @@ import org.json.JSONObject;
 public class ChooseSongActivity extends AppCompatActivity {
 
     private static final String TAG = ChooseSongActivity.class.getSimpleName();
-    static ChooseSongActivity globalActivity;
+    private static WeakReference<ChooseSongActivity> activityRef;
+    private ExecutorService executor;
 
     @Override
     public void onCreate(Bundle state) {
-        globalActivity = this;
+        activityRef = new WeakReference<>(this);
+        executor = Executors.newSingleThreadExecutor();
         super.onCreate(state);
         setContentView(R.layout.activity_choose_song);
 
@@ -61,25 +67,37 @@ public class ChooseSongActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        globalActivity = this;
+        activityRef = new WeakReference<>(this);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        activityRef = null;
+        if (executor != null) executor.shutdown();
     }
 
     public static void openFile(FileUri file) {
-        if (globalActivity != null) {
-            globalActivity.doOpenFile(file);
+        ChooseSongActivity activity = activityRef != null ? activityRef.get() : null;
+        if (activity != null && !activity.isFinishing()) {
+            activity.doOpenFile(file);
         }
     }
 
     public void doOpenFile(FileUri file) {
-        byte[] data = file.getData(this);
-        if (data == null || data.length <= 6 || !MidiFile.hasMidiHeader(data)) {
-            showErrorDialog("Error: Unable to open song: " + file, this);
-            return;
-        }
-        updateRecentFile(file);
-        Intent intent = new Intent(Intent.ACTION_VIEW, file.getUri(), this, SheetMusicActivity.class);
-        intent.putExtra(SheetMusicActivity.MidiTitleID, file.toString());
-        startActivity(intent);
+        executor.execute(() -> {
+            byte[] data = file.getData(this);
+            runOnUiThread(() -> {
+                if (data == null || data.length <= 6 || !MidiFile.hasMidiHeader(data)) {
+                    showErrorDialog("Error: Unable to open song: " + file, this);
+                    return;
+                }
+                updateRecentFile(file);
+                Intent intent = new Intent(Intent.ACTION_VIEW, file.getUri(), this, SheetMusicActivity.class);
+                intent.putExtra(SheetMusicActivity.MidiTitleID, file.toString());
+                startActivity(intent);
+            });
+        });
     }
 
     /** Show an error dialog with the given message */

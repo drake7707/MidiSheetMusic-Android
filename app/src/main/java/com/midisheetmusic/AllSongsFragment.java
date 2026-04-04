@@ -5,6 +5,8 @@ import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.InputType;
@@ -57,9 +59,6 @@ public class AllSongsFragment extends Fragment implements TextWatcher {
     @Override
     public void onResume() {
         super.onResume();
-        if (songlist == null || songlist.isEmpty()) {
-            loadSongs();
-        }
     }
 
     @Override
@@ -69,24 +68,26 @@ public class AllSongsFragment extends Fragment implements TextWatcher {
     }
 
     private void loadSongs() {
-        songlist = new ArrayList<>();
-        loadAssetMidiFiles();
-        loadMidiFilesFromProvider(MediaStore.Audio.Media.INTERNAL_CONTENT_URI);
-        loadMidiFilesFromProvider(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
+        Handler handler = new Handler(Looper.getMainLooper());
+        executor.execute(() -> {
+            ArrayList<FileUri> loaded = new ArrayList<>();
+            loadAssetMidiFiles(loaded);
+            loadMidiFilesFromProvider(MediaStore.Audio.Media.INTERNAL_CONTENT_URI, loaded);
+            loadMidiFilesFromProvider(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, loaded);
 
-        if (!songlist.isEmpty()) {
-            Collections.sort(songlist, songlist.get(0));
-        }
-        ArrayList<FileUri> deduplicated = new ArrayList<>();
-        String prevName = "";
-        for (FileUri file : songlist) {
-            if (!file.toString().equals(prevName)) {
-                deduplicated.add(file);
+            if (!loaded.isEmpty()) Collections.sort(loaded, loaded.get(0));
+            ArrayList<FileUri> deduplicated = new ArrayList<>();
+            String prevName = "";
+            for (FileUri file : loaded) {
+                if (!file.toString().equals(prevName)) deduplicated.add(file);
+                prevName = file.toString();
             }
-            prevName = file.toString();
-        }
-        songlist = deduplicated;
-        updateAdapter();
+            handler.post(() -> {
+                if (getView() == null) return;
+                songlist = deduplicated;
+                updateAdapter();
+            });
+        });
     }
 
     private void updateAdapter() {
@@ -98,13 +99,13 @@ public class AllSongsFragment extends Fragment implements TextWatcher {
         });
     }
 
-    private void loadAssetMidiFiles() {
+    private void loadAssetMidiFiles(ArrayList<FileUri> list) {
         try {
             AssetManager assets = requireContext().getResources().getAssets();
             for (String path : assets.list("")) {
                 if (path.endsWith(".mid")) {
                     Uri uri = Uri.parse("file:///android_asset/" + path);
-                    songlist.add(new FileUri(uri, path));
+                    list.add(new FileUri(uri, path));
                 }
             }
         } catch (IOException e) {
@@ -112,7 +113,7 @@ public class AllSongsFragment extends Fragment implements TextWatcher {
         }
     }
 
-    private void loadMidiFilesFromProvider(Uri contentUri) {
+    private void loadMidiFilesFromProvider(Uri contentUri, ArrayList<FileUri> list) {
         ContentResolver resolver = requireContext().getContentResolver();
         String[] columns = {
                 MediaStore.Audio.Media._ID,
@@ -131,7 +132,7 @@ public class AllSongsFragment extends Fragment implements TextWatcher {
                 String mime = cursor.getString(mimeCol);
                 if (mime != null && (mime.endsWith("/midi") || mime.endsWith("/mid"))) {
                     Uri uri = Uri.withAppendedPath(contentUri, String.valueOf(id));
-                    songlist.add(new FileUri(uri, title));
+                    list.add(new FileUri(uri, title));
                 }
             } while (cursor.moveToNext());
         } catch (Exception e) {

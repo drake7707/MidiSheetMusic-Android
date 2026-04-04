@@ -29,7 +29,7 @@ import java.util.Collections;
 
 
 public class FileBrowserActivity extends AppCompatActivity {
-    private final String LOG_TAG = FileBrowserActivity.class.getSimpleName();
+    private static final String TAG = FileBrowserActivity.class.getSimpleName();
     private String directory;            /* Current directory being displayed */
     private TextView directoryView;      /* TextView showing directory name */
     private String rootdir;              /* The top level root directory */
@@ -66,12 +66,13 @@ public class FileBrowserActivity extends AppCompatActivity {
                 directory = new File(directory).getParent();
             }
             catch (Exception e) {
-                Log.e(LOG_TAG, Thread.currentThread().getStackTrace()[2].getMethodName(), e);
+                Log.e(TAG, "Error navigating to parent directory", e);
             }
         }
         else {
             directory = newdirectory;
         }
+        if (directory == null) return;
         // Do not navigate to root directory
         if (directory.equals("/") || directory.equals("//")) {
             return;
@@ -93,7 +94,6 @@ public class FileBrowserActivity extends AppCompatActivity {
             sortedDirs.add(new FileUri(uri, "../"));
         }
         try {
-            Log.e(LOG_TAG, "is root?: " + dir.compareTo(new File(rootdir)));
             File[] files = dir.listFiles();
             if (files != null) {
                 for (File file : files) {
@@ -116,7 +116,7 @@ public class FileBrowserActivity extends AppCompatActivity {
                 }
             }
         } catch (Exception e) {
-            Log.e(LOG_TAG, Thread.currentThread().getStackTrace()[2].getMethodName(), e);
+            Log.e(TAG, "Error listing directory: " + directory, e);
         }
 
         if (sortedDirs.size() > 0) {

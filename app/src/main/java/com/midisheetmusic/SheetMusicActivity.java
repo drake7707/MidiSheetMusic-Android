@@ -83,6 +83,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
     private TextView txtLoopStartBadge;
     private TextView txtLoopEndBadge;
     private boolean loopExpanded = false;
+    private boolean updatingToggles = false;
 
     /** Create this SheetMusicActivity.
      * The Intent should have two parameters:
@@ -175,20 +176,26 @@ public class SheetMusicActivity extends MidiHandlingActivity {
         });
 
         switchUseColors.setOnCheckedChangeListener((btn, checked) -> {
+            if (updatingToggles) return;
+            updatingToggles = true;
             if (checked) {
                 options.colorAccidentals = false;
                 switchColorAccidentals.setChecked(false);
             }
             options.useColors = checked;
+            updatingToggles = false;
             createSheetMusic(options);
         });
 
         switchColorAccidentals.setOnCheckedChangeListener((btn, checked) -> {
+            if (updatingToggles) return;
+            updatingToggles = true;
             if (checked) {
                 options.useColors = false;
                 switchUseColors.setChecked(false);
             }
             options.colorAccidentals = checked;
+            updatingToggles = false;
             createSheetMusic(options);
         });
 
@@ -237,6 +244,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
     }
 
     private void showMeasurePicker(boolean isStart) {
+        if (options.lastMeasure <= 0) return;
         String[] items = new String[options.lastMeasure + 1];
         for (int i = 0; i < items.length; i++) items[i] = String.valueOf(i + 1);
         int currentSelection = isStart ? options.playMeasuresInLoopStart : options.playMeasuresInLoopEnd;
@@ -330,6 +338,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
                 Canvas imageCanvas = new Canvas(image);
                 sheet.DrawPage(imageCanvas, page);
                 saveBitmapToFile(image, filename + page);
+                image.recycle();
             }
             Toast.makeText(this, "Images saved to Pictures/MidiSheetMusic", Toast.LENGTH_LONG).show();
         } catch (IOException e) {
