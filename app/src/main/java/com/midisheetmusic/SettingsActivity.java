@@ -76,33 +76,31 @@ public class SettingsActivity extends AppCompatActivity {
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
+
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                SettingsFragment settingsFragment = (SettingsFragment)
+                        getSupportFragmentManager().findFragmentById(R.id.settings);
+                if (settingsFragment != null) {
+                    settingsFragment.updateOptions();
+                }
+                Intent intent = new Intent();
+                intent.putExtra(SettingsActivity.settingsID, options);
+                setResult(Activity.RESULT_OK, intent);
+                setEnabled(false);
+                getOnBackPressedDispatcher().onBackPressed();
+            }
+        });
     }
 
     /** Handle 'Up' button press */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
-            onBackPressed();
+            getOnBackPressedDispatcher().onBackPressed();
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    /** When the back button is pressed, update the MidiOptions.
-     *  Return the updated options as the 'result' of this Activity.
-     */
-    @Override
-    public void onBackPressed() {
-        // Make sure `options` is updated with the changes
-        SettingsFragment settingsFragment = (SettingsFragment)getSupportFragmentManager()
-                .findFragmentById(R.id.settings);
-        if (settingsFragment != null) {
-            settingsFragment.updateOptions();
-        }
-
-        Intent intent = new Intent();
-        intent.putExtra(SettingsActivity.settingsID, options);
-        setResult(Activity.RESULT_OK, intent);
-        super.onBackPressed();
     }
 
     public static class SettingsFragment extends PreferenceFragmentCompat

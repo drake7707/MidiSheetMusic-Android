@@ -31,7 +31,9 @@ import android.widget.Toast;
 
 import com.midisheetmusic.sheets.ChordSymbol;
 import com.midisheetmusic.sheets.MusicSymbol;
-import com.mikepenz.materialdrawer.Drawer;
+
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -76,7 +78,7 @@ public class MidiPlayer extends LinearLayout {
     private TextView speedText;
     /** The seekbar for controlling playback speed */
     private SeekBar speedBar;
-    private Drawer drawer;
+    private DrawerLayout drawerLayout;
 
     /** The index corresponding to left/right hand in the track list */
     private static final int LEFT_TRACK = 1;
@@ -204,8 +206,9 @@ public class MidiPlayer extends LinearLayout {
         playButton.setOnClickListener(v -> Play());
         fastFwdButton.setOnClickListener(v -> FastForward());
         settingsButton.setOnClickListener(v -> {
-            drawer.deselect();
-            drawer.openDrawer();
+            if (drawerLayout != null) {
+                drawerLayout.openDrawer(GravityCompat.END);
+            }
         });
         midiButton.setOnClickListener(v -> toggleMidi());
         leftHandButton.setOnClickListener(v -> toggleTrack(LEFT_TRACK));
@@ -775,8 +778,8 @@ public class MidiPlayer extends LinearLayout {
         return playstate == midi;
     }
 
-    public void setDrawer(Drawer drawer) {
-        this.drawer = drawer;
+    public void setDrawerLayout(DrawerLayout drawerLayout) {
+        this.drawerLayout = drawerLayout;
     }
 
     @Override
