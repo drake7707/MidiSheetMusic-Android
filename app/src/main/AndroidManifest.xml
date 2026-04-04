@@ -34,18 +34,6 @@
             android:exported="false" />
 
         <activity
-            android:name=".FileBrowserActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".AllSongsActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".RecentSongsActivity"
-            android:exported="false" />
-
-        <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:label="@string/title_activity_settings"

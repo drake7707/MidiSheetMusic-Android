@@ -19,6 +19,7 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.media.MediaPlayer;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.view.View;
@@ -32,6 +33,7 @@ import android.widget.Toast;
 import com.midisheetmusic.sheets.ChordSymbol;
 import com.midisheetmusic.sheets.MusicSymbol;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
@@ -117,7 +119,7 @@ public class MidiPlayer extends LinearLayout {
     /** Time (in pulses) music was last at */
     double prevPulseTime;
     /** The parent activity. */
-    Activity activity;
+    AppCompatActivity activity;
 
 
     /** A listener that allows us to send a request to update the sheet when needed */
@@ -133,7 +135,7 @@ public class MidiPlayer extends LinearLayout {
      */
     public MidiPlayer(Activity activity) {
         super(activity);
-        this.activity = activity;
+        this.activity = (AppCompatActivity) activity;
         this.midifile = null;
         this.options = null;
         this.sheet = null;
@@ -201,7 +203,7 @@ public class MidiPlayer extends LinearLayout {
         speedText = findViewById(R.id.txt_speed);
         speedBar = findViewById(R.id.speed_bar);
 
-        backButton.setOnClickListener(v -> activity.onBackPressed());
+        backButton.setOnClickListener(v -> activity.getOnBackPressedDispatcher().onBackPressed());
         rewindButton.setOnClickListener(v -> Rewind());
         resetButton.setOnClickListener(v -> Reset());
         playButton.setOnClickListener(v -> Play());
@@ -262,7 +264,7 @@ public class MidiPlayer extends LinearLayout {
         /* Initialize the timer used for playback, but don't start
          * the timer yet (enabled = false).
          */
-        timer = new Handler();
+        timer = new Handler(Looper.getMainLooper());
     }
 
     private void toggleMidi() {

@@ -22,7 +22,7 @@
             android:padding="16dp" />
 
         <!-- Scroll Vertically -->
-        <Switch
+        <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switch_scroll_vert"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -30,7 +30,7 @@
             android:padding="12dp" />
 
         <!-- Use Note Colors -->
-        <Switch
+        <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switch_use_colors"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -38,7 +38,7 @@
             android:padding="12dp" />
 
         <!-- Color Accidentals -->
-        <Switch
+        <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switch_color_accidentals"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -56,7 +56,7 @@
             android:focusable="true"
             android:background="?attr/selectableItemBackground">
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/switch_loop_enable"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -150,7 +150,7 @@
         </LinearLayout>
 
         <!-- Show Measure Numbers -->
-        <Switch
+        <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switch_show_measures"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

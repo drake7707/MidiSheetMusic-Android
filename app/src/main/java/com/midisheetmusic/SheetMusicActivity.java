@@ -29,10 +29,12 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -58,7 +60,6 @@ import java.util.zip.CRC32;
 public class SheetMusicActivity extends MidiHandlingActivity {
 
     public static final String MidiTitleID = "MidiTitleID";
-    public static final int REQUEST_CODE_SETTINGS = 1;
     public static final int ID_LOOP_ENABLE = 10;
     public static final int ID_LOOP_START = 11;
     public static final int ID_LOOP_END = 12;
@@ -73,17 +74,19 @@ public class SheetMusicActivity extends MidiHandlingActivity {
     private DrawerLayout drawerLayout;
 
     // Drawer views
-    private Switch switchScrollVert;
-    private Switch switchUseColors;
-    private Switch switchColorAccidentals;
-    private Switch switchLoopEnable;
-    private Switch switchShowMeasures;
+    private SwitchCompat switchScrollVert;
+    private SwitchCompat switchUseColors;
+    private SwitchCompat switchColorAccidentals;
+    private SwitchCompat switchLoopEnable;
+    private SwitchCompat switchShowMeasures;
     private LinearLayout layoutLoopSubitems;
     private TextView txtLoopArrow;
     private TextView txtLoopStartBadge;
     private TextView txtLoopEndBadge;
     private boolean loopExpanded = false;
     private boolean updatingToggles = false;
+
+    private ActivityResultLauncher<Intent> settingsLauncher;
 
     /** Create this SheetMusicActivity.
      * The Intent should have two parameters:
@@ -93,6 +96,44 @@ public class SheetMusicActivity extends MidiHandlingActivity {
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
+
+        // Register the settings result launcher before any possible finish() calls
+        settingsLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() != android.app.Activity.RESULT_OK
+                            || result.getData() == null) return;
+                    MidiOptions newOptions;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        newOptions = result.getData().getSerializableExtra(
+                                SettingsActivity.settingsID, MidiOptions.class);
+                    } else {
+                        newOptions = (MidiOptions) result.getData().getSerializableExtra(
+                                SettingsActivity.settingsID);
+                    }
+                    if (newOptions != null) {
+                        options = newOptions;
+                    }
+                    for (int i = 0; i < options.instruments.length; i++) {
+                        if (options.instruments[i] !=
+                                midifile.getTracks().get(i).getInstrument()) {
+                            options.useDefaultInstruments = false;
+                        }
+                    }
+                    saveOptions();
+                    createSheetMusic(options);
+                });
+
+        // Handle back press: save options before finishing
+        getOnBackPressedDispatcher().addCallback(this,
+                new androidx.activity.OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        saveOptions();
+                        setEnabled(false);
+                        getOnBackPressedDispatcher().onBackPressed();
+                    }
+                });
 
         hideSystemUI();
 
@@ -303,7 +344,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
         Intent intent = new Intent(this, SettingsActivity.class);
         intent.putExtra(SettingsActivity.settingsID, options);
         intent.putExtra(SettingsActivity.defaultSettingsID, defaultOptions);
-        startActivityForResult(intent, REQUEST_CODE_SETTINGS);
+        settingsLauncher.launch(intent);
     }
 
     /** Show the "Save As Images" dialog */
@@ -399,34 +440,6 @@ public class SheetMusicActivity extends MidiHandlingActivity {
             editor.putString("" + midiCRC, json);
         }
         editor.apply();
-    }
-
-    @Override
-    public void onBackPressed() {
-        saveOptions();
-        super.onBackPressed();
-    }
-
-    /** Callback when SettingsActivity finishes. */
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        if (requestCode != REQUEST_CODE_SETTINGS || intent == null) {
-            return;
-        }
-        MidiOptions newOptions = (MidiOptions)
-                intent.getSerializableExtra(SettingsActivity.settingsID);
-        if (newOptions != null) {
-            options = newOptions;
-        }
-        // Check whether the default instruments have changed
-        for (int i = 0; i < options.instruments.length; i++) {
-            if (options.instruments[i] !=
-                    midifile.getTracks().get(i).getInstrument()) {
-                options.useDefaultInstruments = false;
-            }
-        }
-        saveOptions();
-        createSheetMusic(options);
     }
 
     /** When this activity resumes, redraw all the views */
