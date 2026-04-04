@@ -54,19 +54,12 @@ public class SplashActivity extends AppCompatActivity {
 
     /** Returns the set of permissions needed for the running Android version. */
     private String[] requiredPermissions() {
-        if (Build.VERSION.SDK_INT >= 33) {
-            // Android 13+: use READ_MEDIA_AUDIO
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ (API 33+): granular media permission
             return new String[]{Manifest.permission.READ_MEDIA_AUDIO};
-        } else if (Build.VERSION.SDK_INT >= 29) {
-            // Android 10–12: READ_EXTERNAL_STORAGE only (WRITE is not needed)
-            return new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
-        } else {
-            // Android <= 9: request both read and write
-            return new String[]{
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-            };
         }
+        // Android 11–12 (API 30–32): legacy storage read
+        return new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
     }
 
     @Override

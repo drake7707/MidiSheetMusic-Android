@@ -20,7 +20,6 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -35,6 +34,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.content.IntentCompat;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -104,14 +104,8 @@ public class SheetMusicActivity extends MidiHandlingActivity {
                     Intent data = result.getData();
                     if (result.getResultCode() != android.app.Activity.RESULT_OK
                             || data == null) return;
-                    MidiOptions newOptions;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        newOptions = data.getSerializableExtra(
-                                SettingsActivity.settingsID, MidiOptions.class);
-                    } else {
-                        newOptions = (MidiOptions) data.getSerializableExtra(
-                                SettingsActivity.settingsID);
-                    }
+                    MidiOptions newOptions = IntentCompat.getSerializableExtra(
+                            data, SettingsActivity.settingsID, MidiOptions.class);
                     if (newOptions != null) {
                         options = newOptions;
                     }
@@ -398,31 +392,17 @@ public class SheetMusicActivity extends MidiHandlingActivity {
 
     private void saveBitmapToFile(Bitmap bitmap, String baseFilename) throws IOException {
         String fileName = baseFilename + ".png";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ContentValues values = new ContentValues();
-            values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
-            values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
-            values.put(MediaStore.Images.Media.RELATIVE_PATH,
-                    Environment.DIRECTORY_PICTURES + "/MidiSheetMusic");
-            Uri imageUri = getContentResolver().insert(
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-            if (imageUri == null) throw new IOException("Could not create MediaStore entry");
-            try (OutputStream out = getContentResolver().openOutputStream(imageUri)) {
-                if (out == null) throw new IOException("Could not open output stream");
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-            }
-        } else {
-            java.io.File dir = Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_PICTURES + "/MidiSheetMusic");
-            if (!dir.exists() && !dir.mkdirs()) {
-                throw new IOException("Could not create directory " + dir);
-            }
-            java.io.File file = new java.io.File(dir, fileName);
-            try (OutputStream out = new java.io.FileOutputStream(file)) {
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-            }
-            android.media.MediaScannerConnection.scanFile(this,
-                    new String[]{file.getAbsolutePath()}, null, null);
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+        values.put(MediaStore.Images.Media.RELATIVE_PATH,
+                Environment.DIRECTORY_PICTURES + "/MidiSheetMusic");
+        Uri imageUri = getContentResolver().insert(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        if (imageUri == null) throw new IOException("Could not create MediaStore entry");
+        try (OutputStream out = getContentResolver().openOutputStream(imageUri)) {
+            if (out == null) throw new IOException("Could not open output stream");
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
         }
     }
 

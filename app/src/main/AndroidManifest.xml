@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Needed on Android 9 and below for writing images to Pictures -->
-    <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
-    <!-- Needed on Android 10–12 for reading external storage -->
+    <!-- For reading MIDI files on Android 11–12 (API 30–32) -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <!-- Needed on Android 13+ for reading audio files via MediaStore -->
+    <!-- For reading audio files on Android 13+ (API 33+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <!-- USB MIDI device access -->
     <uses-feature android:name="android.hardware.usb.host" android:required="false" />

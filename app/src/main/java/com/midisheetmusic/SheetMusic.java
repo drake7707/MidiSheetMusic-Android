@@ -21,7 +21,6 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -122,17 +121,9 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
         bufferX = bufferY = scrollX = scrollY = 0;
         
         Activity activity = (Activity) context;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            android.graphics.Rect bounds =
-                    activity.getWindowManager().getCurrentWindowMetrics().getBounds();
-            screenwidth = bounds.width();
-            screenheight = bounds.height();
-        } else {
-            Point size = new Point();
-            activity.getWindowManager().getDefaultDisplay().getSize(size);
-            screenwidth = size.x;
-            screenheight = size.y;
-        }
+        Rect bounds = activity.getWindowManager().getCurrentWindowMetrics().getBounds();
+        screenwidth = bounds.width();
+        screenheight = bounds.height();
 
         // Size could've been captured while the screen was still in portrait.
         // In this case, swap the dimensions.

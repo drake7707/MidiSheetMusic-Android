@@ -13,9 +13,10 @@
 package com.midisheetmusic;
 
 import android.content.Context;
+import android.graphics.BlendMode;
+import android.graphics.BlendModeColorFilter;
 import android.graphics.Color;
-import android.graphics.Point;
-import android.graphics.PorterDuff;
+import android.graphics.Rect;
 import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Looper;
@@ -184,10 +185,7 @@ public class MidiPlayer extends LinearLayout {
         piano.ShadeNotes((int) currentPulseTime, (int) prevPulseTime);
     }
 
-    /** Create the rewind, play, stop, and fast forward buttons.
-     * @SuppressWarnings: pre-API 30 getDefaultDisplay().getSize() and
-     * pre-API 29 PorterDuff.Mode are version-guarded below. */
-    @SuppressWarnings("deprecation")
+    /** Create the rewind, play, stop, and fast forward buttons */
     void init() {
         inflate(activity, R.layout.player_toolbar, this);
 
@@ -226,27 +224,14 @@ public class MidiPlayer extends LinearLayout {
                             rewindButton.getWidth() + fastFwdButton.getWidth() + midiButton.getWidth() +
                             leftHandButton.getWidth() + rightHandButton.getWidth() + pianoButton.getWidth() +
                             settingsButton.getWidth();
-                    int screenwidth;
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                        android.util.DisplayMetrics metrics = new android.util.DisplayMetrics();
-                        activity.getDisplay().getRealMetrics(metrics);
-                        screenwidth = metrics.widthPixels;
-                    } else {
-                        android.graphics.Point size = new android.graphics.Point();
-                        activity.getWindowManager().getDefaultDisplay().getSize(size);
-                        screenwidth = size.x;
-                    }
+                    Rect bounds = activity.getWindowManager().getCurrentWindowMetrics().getBounds();
                     speedBar.setLayoutParams(
-                            new LayoutParams(screenwidth - iconsWidth - 16, speedBar.getHeight()));
+                            new LayoutParams(bounds.width() - iconsWidth - 16, speedBar.getHeight()));
                 }
         );
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            speedBar.getProgressDrawable().setColorFilter(
-                    new android.graphics.BlendModeColorFilter(Color.parseColor("#00BB87"), android.graphics.BlendMode.SRC_IN));
-        } else {
-            speedBar.getProgressDrawable().setColorFilter(Color.parseColor("#00BB87"), PorterDuff.Mode.SRC_IN);
-        }
+        speedBar.getProgressDrawable().setColorFilter(
+                new BlendModeColorFilter(Color.parseColor("#00BB87"), BlendMode.SRC_IN));
         speedBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
                 // If speed bar is between 97 and 103 approximate it to 100

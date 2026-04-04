@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.ditek.midisheetmusic"
-        minSdk 21
+        minSdk 30
         targetSdk 35
         versionCode 9
         versionName "2.6"
