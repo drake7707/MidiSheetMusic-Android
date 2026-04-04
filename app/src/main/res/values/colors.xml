@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Material Design teal palette (previously provided by MaterialDrawer library) -->
+    <color name="md_teal_300">#4DB6AC</color>
+    <color name="md_teal_500">#009688</color>
+    <color name="md_teal_800">#00695C</color>
+
     <color name="primary">@color/md_teal_500</color>
     <color name="primaryDark">@color/md_teal_800</color>
     <color name="primaryLight">#82e9de</color>
