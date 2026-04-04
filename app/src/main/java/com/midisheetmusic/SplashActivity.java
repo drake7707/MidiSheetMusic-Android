@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,38 +31,71 @@ public class SplashActivity extends AppCompatActivity {
 
     /** Check for required permissions and start ChooseSongActivity */
     private void startActivity() {
-        // Check if we have WRITE_EXTERNAL_STORAGE permission
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    PERMISSION_REQUEST_CODE_EXT_STORAGE_);
+        String[] required = requiredPermissions();
+        if (required.length == 0) {
+            goToChooseSong();
             return;
         }
 
-        Intent intent = new Intent(this, ChooseSongActivity.class);
-        startActivity(intent);
-        finish();
+        boolean allGranted = true;
+        for (String perm : required) {
+            if (ContextCompat.checkSelfPermission(this, perm) != PackageManager.PERMISSION_GRANTED) {
+                allGranted = false;
+                break;
+            }
+        }
+
+        if (allGranted) {
+            goToChooseSong();
+        } else {
+            ActivityCompat.requestPermissions(this, required, PERMISSION_REQUEST_CODE_EXT_STORAGE_);
+        }
+    }
+
+    /** Returns the set of permissions needed for the running Android version. */
+    private String[] requiredPermissions() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            // Android 13+: use READ_MEDIA_AUDIO
+            return new String[]{Manifest.permission.READ_MEDIA_AUDIO};
+        } else if (Build.VERSION.SDK_INT >= 29) {
+            // Android 10–12: READ_EXTERNAL_STORAGE only (WRITE is not needed)
+            return new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
+        } else {
+            // Android <= 9: request both read and write
+            return new String[]{
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+            };
+        }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            String[] permissions, int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_REQUEST_CODE_EXT_STORAGE_: {
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // permission granted
-                    startActivity();
-                } else {
-                    // permission denied
-                    Snackbar.make(findViewById(android.R.id.content),
-                            R.string.msg_permission_denied, Snackbar.LENGTH_INDEFINITE)
-                            .setAction(R.string.msg_permission_denied_retry, view -> startActivity())
-                            .show();
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE_EXT_STORAGE_) {
+            boolean granted = grantResults.length > 0;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    granted = false;
+                    break;
                 }
             }
+            if (granted) {
+                goToChooseSong();
+            } else {
+                Snackbar.make(findViewById(android.R.id.content),
+                        R.string.msg_permission_denied, Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.msg_permission_denied_retry, view -> startActivity())
+                        .show();
+            }
         }
+    }
+
+    private void goToChooseSong() {
+        Intent intent = new Intent(this, ChooseSongActivity.class);
+        startActivity(intent);
+        finish();
     }
 
     /** Load all the resource images */

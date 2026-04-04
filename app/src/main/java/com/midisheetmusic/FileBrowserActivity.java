@@ -12,7 +12,6 @@
 
 package com.midisheetmusic;
 
-import android.app.ListActivity;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
@@ -22,17 +21,19 @@ import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 
 
-
-public class FileBrowserActivity extends ListActivity {
+public class FileBrowserActivity extends AppCompatActivity {
     private final String LOG_TAG = FileBrowserActivity.class.getSimpleName();
     private String directory;            /* Current directory being displayed */
     private TextView directoryView;      /* TextView showing directory name */
     private String rootdir;              /* The top level root directory */
+    private ListView listView;
 
 
     @Override
@@ -40,6 +41,7 @@ public class FileBrowserActivity extends ListActivity {
         super.onCreate(state);
         setContentView(R.layout.file_browser);
         setTitle("MidiSheetMusic: Browse Files");
+        listView = findViewById(R.id.list_view);
     }
 
     @Override
@@ -125,34 +127,27 @@ public class FileBrowserActivity extends ListActivity {
         }
         filelist.addAll(sortedDirs);
         filelist.addAll(sortedFiles);
+
         IconArrayAdapter<FileUri> adapter =
                 new IconArrayAdapter<>(this, android.R.layout.simple_list_item_1, filelist);
-        this.setListAdapter(adapter);
-    }
-
-
-    /** When a user selects an item:
-     * - If it's a directory, load that directory.
-     * - If it's a file, open the SheetMusicActivity.
-     */
-    @Override
-    protected void onListItemClick(ListView parent, View view, int position, long id) {
-        super.onListItemClick(parent, view, position, id);
-        FileUri file = (FileUri) this.getListAdapter().getItem(position);
-        if (file.isDirectory()) {
-            String path = file.getUri().getPath();
-            if (path != null) {
-                this.loadDirectory(path);
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            FileUri file = (FileUri) adapter.getItem(position);
+            if (file.isDirectory()) {
+                String path = file.getUri().getPath();
+                if (path != null) {
+                    loadDirectory(path);
+                }
+            } else {
+                ChooseSongActivity.openFile(file);
             }
-        }
-        else {
-            ChooseSongActivity.openFile(file);
-        }
+        });
     }
 
     public void onHomeClick(View view) {
         loadDirectory(rootdir);
     }
 }
+
 
 
