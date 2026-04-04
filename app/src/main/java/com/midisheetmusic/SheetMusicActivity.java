@@ -101,14 +101,15 @@ public class SheetMusicActivity extends MidiHandlingActivity {
         settingsLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
+                    Intent data = result.getData();
                     if (result.getResultCode() != android.app.Activity.RESULT_OK
-                            || result.getData() == null) return;
+                            || data == null) return;
                     MidiOptions newOptions;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        newOptions = result.getData().getSerializableExtra(
+                        newOptions = data.getSerializableExtra(
                                 SettingsActivity.settingsID, MidiOptions.class);
                     } else {
-                        newOptions = (MidiOptions) result.getData().getSerializableExtra(
+                        newOptions = (MidiOptions) data.getSerializableExtra(
                                 SettingsActivity.settingsID);
                     }
                     if (newOptions != null) {

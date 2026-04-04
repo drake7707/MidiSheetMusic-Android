@@ -12,7 +12,6 @@
 
 package com.midisheetmusic;
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -133,9 +132,9 @@ public class MidiPlayer extends LinearLayout {
     /** Create a new MidiPlayer, displaying the play/stop buttons, and the
      *  speed bar.  The midifile and sheetmusic are initially null.
      */
-    public MidiPlayer(Activity activity) {
+    public MidiPlayer(AppCompatActivity activity) {
         super(activity);
-        this.activity = (AppCompatActivity) activity;
+        this.activity = activity;
         this.midifile = null;
         this.options = null;
         this.sheet = null;
