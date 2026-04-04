@@ -43,7 +43,7 @@ import java.util.concurrent.Executors;
 public class ChooseSongActivity extends AppCompatActivity {
 
     private static final String TAG = ChooseSongActivity.class.getSimpleName();
-    private static WeakReference<ChooseSongActivity> activityRef;
+    private static volatile WeakReference<ChooseSongActivity> activityRef;
     private ExecutorService executor;
 
     @Override

@@ -184,7 +184,9 @@ public class MidiPlayer extends LinearLayout {
         piano.ShadeNotes((int) currentPulseTime, (int) prevPulseTime);
     }
 
-    /** Create the rewind, play, stop, and fast forward buttons */
+    /** Create the rewind, play, stop, and fast forward buttons.
+     * @SuppressWarnings: pre-API 30 getDefaultDisplay().getSize() and
+     * pre-API 29 PorterDuff.Mode are version-guarded below. */
     @SuppressWarnings("deprecation")
     void init() {
         inflate(activity, R.layout.player_toolbar, this);
