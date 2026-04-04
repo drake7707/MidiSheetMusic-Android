@@ -12,10 +12,12 @@
 
 package com.midisheetmusic;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.BlendMode;
 import android.graphics.BlendModeColorFilter;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.media.MediaPlayer;
 import android.os.Handler;
@@ -33,7 +35,6 @@ import android.widget.Toast;
 import com.midisheetmusic.sheets.ChordSymbol;
 import com.midisheetmusic.sheets.MusicSymbol;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
@@ -119,7 +120,7 @@ public class MidiPlayer extends LinearLayout {
     /** Time (in pulses) music was last at */
     double prevPulseTime;
     /** The parent activity. */
-    AppCompatActivity activity;
+    Activity activity;
 
 
     /** A listener that allows us to send a request to update the sheet when needed */
@@ -133,7 +134,7 @@ public class MidiPlayer extends LinearLayout {
     /** Create a new MidiPlayer, displaying the play/stop buttons, and the
      *  speed bar.  The midifile and sheetmusic are initially null.
      */
-    public MidiPlayer(AppCompatActivity activity) {
+    public MidiPlayer(Activity activity) {
         super(activity);
         this.activity = activity;
         this.midifile = null;
@@ -202,7 +203,7 @@ public class MidiPlayer extends LinearLayout {
         speedText = findViewById(R.id.txt_speed);
         speedBar = findViewById(R.id.speed_bar);
 
-        backButton.setOnClickListener(v -> activity.getOnBackPressedDispatcher().onBackPressed());
+        backButton.setOnClickListener(v -> activity.onBackPressed());
         rewindButton.setOnClickListener(v -> Rewind());
         resetButton.setOnClickListener(v -> Reset());
         playButton.setOnClickListener(v -> Play());
