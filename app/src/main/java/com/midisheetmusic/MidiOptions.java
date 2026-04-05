@@ -69,6 +69,7 @@ public class MidiOptions implements Serializable {
 
     public int[] noteColors;
     public int midiShift;
+    public int[] trackOctaveShift; /** Per-track octave shift for notation: 0=none, 1=8va, -1=8vb */
 
     public MidiOptions() {
     }
@@ -92,6 +93,7 @@ public class MidiOptions implements Serializable {
         for (int i = 0; i < instruments.length; i++) {
             instruments[i] = midifile.getTracks().get(i).getInstrument();
         }
+        trackOctaveShift = new int[num_tracks];
         scrollVert = false;
         largeNoteSize = true;
         twoStaffs = tracks.length != 2;
@@ -147,6 +149,10 @@ public class MidiOptions implements Serializable {
             for (int value : instruments) {
                 jsonInstruments.put(value);
             }
+            JSONArray jsonOctaveShift = new JSONArray();
+            for (int value : trackOctaveShift) {
+                jsonOctaveShift.put(value);
+            }
             JSONArray jsonColors = new JSONArray();
             for (int value : noteColors) {
                 jsonColors.put(value);
@@ -164,6 +170,7 @@ public class MidiOptions implements Serializable {
             json.put("tracks", jsonTracks); 
             json.put("mute", jsonMute); 
             json.put("instruments", jsonInstruments); 
+            json.put("trackOctaveShift", jsonOctaveShift);
             json.put("useDefaultInstruments", useDefaultInstruments);
             json.put("scrollVert", scrollVert);
             json.put("showPiano", showPiano);
@@ -220,6 +227,16 @@ public class MidiOptions implements Serializable {
             options.instruments = new int[jsonInstruments.length()];
             for (int i = 0; i < options.instruments.length; i++) {
                 options.instruments[i] = jsonInstruments.getInt(i);
+            }
+
+            if (json.has("trackOctaveShift")) {
+                JSONArray jsonOctaveShift = json.getJSONArray("trackOctaveShift");
+                options.trackOctaveShift = new int[jsonOctaveShift.length()];
+                for (int i = 0; i < options.trackOctaveShift.length; i++) {
+                    options.trackOctaveShift[i] = jsonOctaveShift.getInt(i);
+                }
+            } else {
+                options.trackOctaveShift = new int[options.instruments.length];
             }
 
             if (json.has("noteColors"))
@@ -292,6 +309,9 @@ public class MidiOptions implements Serializable {
         if (saved.instruments.length == instruments.length) {
             System.arraycopy(saved.instruments, 0, instruments, 0, instruments.length);
         }
+        if (saved.trackOctaveShift != null && saved.trackOctaveShift.length == trackOctaveShift.length) {
+            System.arraycopy(saved.trackOctaveShift, 0, trackOctaveShift, 0, trackOctaveShift.length);
+        }
         if (saved.mute.length == mute.length) {
             System.arraycopy(saved.mute, 0, mute, 0, mute.length);
         }
@@ -358,6 +378,8 @@ public class MidiOptions implements Serializable {
         System.arraycopy(mute, 0, options.mute, 0, mute.length);
         options.instruments = new int[instruments.length];
         System.arraycopy(instruments, 0, options.instruments, 0, instruments.length);
+        options.trackOctaveShift = new int[trackOctaveShift.length];
+        System.arraycopy(trackOctaveShift, 0, options.trackOctaveShift, 0, trackOctaveShift.length);
         options.noteColors = new int[noteColors.length];
         System.arraycopy(noteColors, 0, options.noteColors, 0, noteColors.length);
 

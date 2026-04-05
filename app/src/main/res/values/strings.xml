@@ -52,6 +52,16 @@
     <string name="use_full_height">Use full height</string>
     <string name="use_note_colors">Use Note Colors</string>
     <string name="use_accidental_colors">Use Accidental Colors</string>
+    <string name="track_options">Track Options</string>
+    <string name="track_visibility">Toggle track visibility</string>
+    <string name="track_mute">Toggle track mute</string>
+    <string name="track_instrument">Change instrument</string>
+    <string name="track_octave_shift">Octave shift</string>
+    <string name="track_number">Track %d</string>
+    <string name="track_instrument_picker_title">Instrument for Track %d</string>
+    <string name="octave_shift_none">T</string>
+    <string name="octave_shift_8va">8va</string>
+    <string name="octave_shift_8vb">8vb</string>
     <string name="home">Home</string>
 
 </resources>

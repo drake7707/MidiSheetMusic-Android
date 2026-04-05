@@ -1144,10 +1144,12 @@ public class MidiFile {
      */
     public ArrayList<MidiTrack> ChangeMidiNotes(MidiOptions options) {
         ArrayList<MidiTrack> newtracks = new ArrayList<MidiTrack>();
+        ArrayList<Integer> trackMapping = new ArrayList<Integer>();
 
         for (int track = 0; track < tracks.size(); track++) {
             if (options.tracks[track]) {
-                newtracks.add(tracks.get(track).Clone() );
+                newtracks.add(tracks.get(track).Clone());
+                trackMapping.add(track);
             }
         }
 
@@ -1162,6 +1164,21 @@ public class MidiFile {
         }
         MidiFile.RoundStartTimes(newtracks, options.combineInterval, timesig);
         MidiFile.RoundDurations(newtracks, time.getQuarter());
+
+        if (options.trackOctaveShift != null) {
+            for (int i = 0; i < newtracks.size() && i < trackMapping.size(); i++) {
+                int origTrack = trackMapping.get(i);
+                if (origTrack < options.trackOctaveShift.length && options.trackOctaveShift[origTrack] != 0) {
+                    int shift = options.trackOctaveShift[origTrack] * 12;
+                    for (MidiNote note : newtracks.get(i).getNotes()) {
+                        int newNum = note.getNumber() + shift;
+                        if (newNum < 0) newNum = 0;
+                        if (newNum > 127) newNum = 127;
+                        note.setNumber(newNum);
+                    }
+                }
+            }
+        }
 
         if (options.twoStaffs) {
             newtracks = MidiFile.CombineToTwoTracks(newtracks, timesig.getMeasure());
