@@ -891,97 +891,6 @@ public class MidiFile {
         return newlist;
     }
 
-    /** Create NoteOn/NoteOff events for a percussion count-in.
-     *  Returns a list of events to prepend to the first track (before real notes).
-     *  Beat 1 of each measure uses note 76 (High Wood Block) at velocity 100;
-     *  other beats use note 77 (Low Wood Block) at velocity 80.
-     */
-    private static ArrayList<MidiEvent> CreateCountInEvents(int countInMeasures, TimeSignature ts) {
-        ArrayList<MidiEvent> events = new ArrayList<MidiEvent>();
-        int beatPulses = ts.getMeasure() / ts.getNumerator();
-        int tickDur = Math.max(1, beatPulses / 4);
-        int totalBeats = countInMeasures * ts.getNumerator();
-
-        for (int i = 0; i < totalBeats; i++) {
-            boolean isBeat1 = (i % ts.getNumerator() == 0);
-            byte note = isBeat1 ? (byte)76 : (byte)77; /* High / Low Wood Block */
-            byte velocity = isBeat1 ? (byte)100 : (byte)80;
-
-            /* NoteOn */
-            MidiEvent noteOn = new MidiEvent();
-            noteOn.DeltaTime = (i == 0) ? 0 : (beatPulses - tickDur);
-            noteOn.StartTime = i * beatPulses;
-            noteOn.HasEventflag = true;
-            noteOn.EventFlag = EventNoteOn;
-            noteOn.Channel = 9; /* Percussion channel */
-            noteOn.Notenumber = note;
-            noteOn.Velocity = velocity;
-            events.add(noteOn);
-
-            /* NoteOff */
-            MidiEvent noteOff = new MidiEvent();
-            noteOff.DeltaTime = tickDur;
-            noteOff.StartTime = i * beatPulses + tickDur;
-            noteOff.HasEventflag = true;
-            noteOff.EventFlag = EventNoteOff;
-            noteOff.Channel = 9;
-            noteOff.Notenumber = note;
-            noteOff.Velocity = 0;
-            events.add(noteOff);
-        }
-        return events;
-    }
-
-    /** Prepend count-in click events to the first track in the event list.
-     *  The first real event's DeltaTime is adjusted so that real notes start
-     *  exactly countInMeasures * measure pulses after the MIDI file begins.
-     */
-    private void PrependCountInEvents(ArrayList<ArrayList<MidiEvent>> tracks,
-                                      int countInMeasures, TimeSignature ts) {
-        if (countInMeasures <= 0 || tracks.isEmpty()) {
-            android.util.Log.d("CountIn", "PrependCountInEvents: skipped (countInMeasures="
-                    + countInMeasures + " tracks.size=" + tracks.size() + ")");
-            return;
-        }
-        ArrayList<MidiEvent> countInEvents = CreateCountInEvents(countInMeasures, ts);
-        ArrayList<MidiEvent> firstTrack = tracks.get(0);
-
-        int beatPulses = ts.getMeasure() / ts.getNumerator();
-        int tickDur = Math.max(1, beatPulses / 4);
-
-        android.util.Log.d("CountIn", "PrependCountInEvents: tracks=" + tracks.size()
-                + " firstTrackSize=" + firstTrack.size()
-                + " countInEvents=" + countInEvents.size()
-                + " beatPulses=" + beatPulses + " tickDur=" + tickDur
-                + " ts=" + ts);
-
-        /* The tempo event is at index 0 with DeltaTime=0; insert count-in after it.
-         * The caller (ApplyOptionsToEvents / ApplyOptionsPerChannel) always prepends
-         * a tempo event at index 0, so this assumption is always valid. */
-        int insertPos = 1;
-        if (firstTrack.size() > insertPos) {
-            /* Compute the DeltaTime adjustment for the first real event.
-             * After inserting, the last count-in event (NoteOff) sits at absolute
-             * time (totalBeats-1)*beatPulses + tickDur.  The first real event
-             * must occur at its original time T plus the total count-in duration
-             * (totalBeats * beatPulses).  The required DeltaTime relative to the
-             * last NoteOff is therefore:
-             *   (T + totalBeats*beatPulses) - ((totalBeats-1)*beatPulses + tickDur)
-             *   = T + beatPulses - tickDur
-             * so we add (beatPulses - tickDur) to the existing DeltaTime T. */
-            int originalDelta = firstTrack.get(insertPos).DeltaTime;
-            firstTrack.get(insertPos).DeltaTime += beatPulses - tickDur;
-            android.util.Log.d("CountIn", "PrependCountInEvents: adjusted event[" + insertPos
-                    + "] DeltaTime " + originalDelta + " -> " + firstTrack.get(insertPos).DeltaTime
-                    + " eventFlag=0x" + Integer.toHexString(firstTrack.get(insertPos).EventFlag & 0xFF));
-        } else {
-            android.util.Log.d("CountIn", "PrependCountInEvents: firstTrack too short (size="
-                    + firstTrack.size() + "), no DeltaTime adjustment");
-        }
-        firstTrack.addAll(insertPos, countInEvents);
-        android.util.Log.d("CountIn", "PrependCountInEvents: firstTrack size after insert=" + firstTrack.size());
-    }
-
     /** Create a new Midi tempo event, with the given tempo  */
     private static MidiEvent CreateTempoEvent(int tempo) {
         MidiEvent mevent = new MidiEvent();
@@ -1157,17 +1066,6 @@ public class MidiFile {
                 i++;
             }
         }
-        if (options.countInMeasures > 0 && options.pauseTime == 0) {
-            TimeSignature ts = (options.time != null) ? options.time : timesig;
-            android.util.Log.d("CountIn", "ApplyOptionsToEvents: calling PrependCountInEvents"
-                    + " countInMeasures=" + options.countInMeasures
-                    + " result.size=" + result.size());
-            PrependCountInEvents(result, options.countInMeasures, ts);
-        } else {
-            android.util.Log.d("CountIn", "ApplyOptionsToEvents: skipping count-in"
-                    + " countInMeasures=" + options.countInMeasures
-                    + " pauseTime=" + options.pauseTime);
-        }
         return result;
     }
 
@@ -1236,17 +1134,6 @@ public class MidiFile {
         }
         if (options.pauseTime != 0) {
             newevents = StartAtPauseTime(newevents, options.pauseTime);
-        }
-        if (options.countInMeasures > 0 && options.pauseTime == 0) {
-            TimeSignature ts = (options.time != null) ? options.time : timesig;
-            android.util.Log.d("CountIn", "ApplyOptionsPerChannel: calling PrependCountInEvents"
-                    + " countInMeasures=" + options.countInMeasures
-                    + " newevents.size=" + newevents.size());
-            PrependCountInEvents(newevents, options.countInMeasures, ts);
-        } else {
-            android.util.Log.d("CountIn", "ApplyOptionsPerChannel: skipping count-in"
-                    + " countInMeasures=" + options.countInMeasures
-                    + " pauseTime=" + options.pauseTime);
         }
         return newevents;
     }

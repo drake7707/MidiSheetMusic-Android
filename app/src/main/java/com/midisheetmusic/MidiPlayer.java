@@ -18,7 +18,9 @@ import android.graphics.BlendMode;
 import android.graphics.BlendModeColorFilter;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.ToneGenerator;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -105,6 +107,9 @@ public class MidiPlayer extends LinearLayout {
 
     /** For playing the audio */
     MediaPlayer player;
+    /** Tone generators for the count-in click beats */
+    ToneGenerator clickToneHigh;
+    ToneGenerator clickToneLow;
     /** The midi file to play */
     MidiFile midifile;
     /** The sound options for playing the midi file */
@@ -154,6 +159,12 @@ public class MidiPlayer extends LinearLayout {
         init();
 
         player = new MediaPlayer();
+        try {
+            clickToneHigh = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
+            clickToneLow  = new ToneGenerator(AudioManager.STREAM_MUSIC, 60);
+        } catch (RuntimeException ignored) {
+            /* ToneGenerator unavailable on this device; count-in clicks will be silent */
+        }
         setBackgroundColor(Color.BLACK);
     }
 
@@ -413,11 +424,6 @@ public class MidiPlayer extends LinearLayout {
         options.tempo = (int)(1.0 / inverse_tempo_scaled);
         pulsesPerMsec = midifile.getTime().getQuarter() * (1000.0 / options.tempo);
 
-        android.util.Log.d("CountIn", "CreateMidiFile: countInMeasures=" + options.countInMeasures
-                + " pauseTime=" + options.pauseTime
-                + " tempo=" + options.tempo
-                + " timesig=" + midifile.getTime());
-
         try {
             FileOutputStream dest = activity.openFileOutput(tempSoundFile, Context.MODE_PRIVATE);
             midifile.ChangeSound(dest, options);
@@ -511,6 +517,54 @@ public class MidiPlayer extends LinearLayout {
         timer.postDelayed(DoPlay, 0);
     }
 
+    /** Fields used by the count-in beat Runnables */
+    private int    countInBeatIndex;
+    private int    countInTotalBeats;
+    private int    countInBeatsPerMeasure;
+    private long   countInBeatDurationMs;
+    private long   countInStartTime;
+
+    /** Plays a single metronome click using ToneGenerator.
+     *  @param isAccented true for beat 1 of a measure (high click), false otherwise.
+     */
+    private void playClickBeat(boolean isAccented) {
+        ToneGenerator tg = isAccented ? clickToneHigh : clickToneLow;
+        if (tg != null) {
+            tg.startTone(isAccented ? ToneGenerator.TONE_PROP_BEEP : ToneGenerator.TONE_PROP_BEEP2, 50);
+        }
+    }
+
+    private void releaseClickTones() {
+        if (clickToneHigh != null) { clickToneHigh.release(); clickToneHigh = null; }
+        if (clickToneLow  != null) { clickToneLow.release();  clickToneLow  = null; }
+    }
+
+    /** Runnable that fires once per count-in beat, then starts MIDI playback. */
+    Runnable CountInBeatCallback = new Runnable() {
+        public void run() {
+            if (playstate != playing) return;
+            boolean isAccented = (countInBeatIndex % countInBeatsPerMeasure == 0);
+            playClickBeat(isAccented);
+            countInBeatIndex++;
+            if (countInBeatIndex < countInTotalBeats) {
+                long nextMs = countInStartTime + countInBeatIndex * countInBeatDurationMs;
+                timer.postAtTime(CountInBeatCallback, nextMs);
+            } else {
+                long midiStartMs = countInStartTime + countInTotalBeats * countInBeatDurationMs;
+                timer.postAtTime(DoStartMidi, midiStartMs);
+            }
+        }
+    };
+
+    /** Starts MIDI playback after the count-in delay has elapsed. */
+    Runnable DoStartMidi = new Runnable() {
+        public void run() {
+            if (playstate == playing) {
+                PlaySound(tempSoundFile);
+            }
+        }
+    };
+
     Runnable DoPlay = new Runnable() {
       public void run() {
         /* The startPulseTime is the pulse time of the midi file when
@@ -541,14 +595,22 @@ public class MidiPlayer extends LinearLayout {
             prevPulseTime = options.shifttime - countInPulses - midifile.getTime().getQuarter();
         }
 
-        android.util.Log.d("CountIn", "DoPlay: playstate=" + playstate
-                + " countInMeasures=" + options.countInMeasures
-                + " pauseTime=" + options.pauseTime
-                + " startPulseTime=" + startPulseTime
-                + " currentPulseTime=" + currentPulseTime);
         CreateMidiFile();
         playstate = playing;
-        PlaySound(tempSoundFile);
+
+        if (options.countInMeasures > 0 && options.pauseTime == 0) {
+            /* Delay MIDI start by the count-in duration; play audible click beats. */
+            TimeSignature ts = (options.time != null) ? options.time : midifile.getTime();
+            countInBeatsPerMeasure = ts.getNumerator();
+            countInTotalBeats      = options.countInMeasures * countInBeatsPerMeasure;
+            countInBeatDurationMs  = (long)((double)ts.getMeasure() / countInBeatsPerMeasure / pulsesPerMsec);
+            countInBeatIndex       = 0;
+            countInStartTime       = SystemClock.uptimeMillis();
+            timer.postAtTime(CountInBeatCallback, countInStartTime);
+        } else {
+            PlaySound(tempSoundFile);
+        }
+
         startTime = SystemClock.uptimeMillis();
 
         timer.removeCallbacks(TimerCallback);
@@ -578,6 +640,8 @@ public class MidiPlayer extends LinearLayout {
 
         // Cancel pending play events
         timer.removeCallbacks(DoPlay);
+        timer.removeCallbacks(CountInBeatCallback);
+        timer.removeCallbacks(DoStartMidi);
 
         if (playstate == playing) {
             playstate = initPause;
@@ -617,6 +681,8 @@ public class MidiPlayer extends LinearLayout {
     void DoStop() { 
         playstate = stopped;
         timer.removeCallbacks(TimerCallback);
+        timer.removeCallbacks(CountInBeatCallback);
+        timer.removeCallbacks(DoStartMidi);
         RemoveShading();
         ScrollToStart();
         setVisibility(View.VISIBLE);
@@ -815,6 +881,9 @@ public class MidiPlayer extends LinearLayout {
         timer.removeCallbacks(TimerCallback);
         timer.removeCallbacks(DoPlay);
         timer.removeCallbacks(ReShade);
+        timer.removeCallbacks(CountInBeatCallback);
+        timer.removeCallbacks(DoStartMidi);
+        releaseClickTones();
         if (player != null) {
             if (playstate == playing) {
                 player.stop();
