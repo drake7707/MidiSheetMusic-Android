@@ -700,6 +700,8 @@ public class MidiPlayer extends LinearLayout {
 
     /** Advance the current position by one note.
      *  The music must be in the paused/stopped state.
+     *  If the current pulse time falls between two notes, snap to the next note
+     *  boundary rather than skipping past it.
      */
     public void NextNote() {
         if (midifile == null || sheet == null) {
@@ -713,16 +715,25 @@ public class MidiPlayer extends LinearLayout {
         if (currentNote == null) {
             return;
         }
-        MusicSymbol nextNote = sheet.getCurrentNote(currentNote.getStartTime() + 1);
-        if (nextNote == null) {
-            return;
+
+        double newPulseTime;
+        if (currentNote.getStartTime() > (int) currentPulseTime) {
+            // currentPulseTime is before this note's boundary — snap to it
+            newPulseTime = currentNote.getStartTime();
+        } else {
+            // Already at a note boundary — advance to the next note
+            MusicSymbol nextNote = sheet.getCurrentNote(currentNote.getStartTime() + 1);
+            if (nextNote == null) {
+                return;
+            }
+            newPulseTime = nextNote.getStartTime();
         }
 
         sheet.ShadeNotes(-10, (int) currentPulseTime, SheetMusic.DontScroll);
         piano.ShadeNotes(-10, (int) currentPulseTime);
 
         prevPulseTime = currentPulseTime;
-        currentPulseTime = nextNote.getStartTime();
+        currentPulseTime = newPulseTime;
 
         sheet.ShadeNotes((int) currentPulseTime, (int) prevPulseTime, SheetMusic.ImmediateScroll);
         piano.ShadeNotes((int) currentPulseTime, (int) prevPulseTime);

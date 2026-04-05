@@ -352,9 +352,33 @@ public class SheetMusicActivity extends MidiHandlingActivity {
      *  Page Up        - Previous measure
      *  Page Down      - Next measure
      *  R              - Restart
-     *  + / Numpad +   - Speed up 10%
+     *  + / = / Numpad + - Speed up 10%
      *  - / Numpad -   - Speed down 10%
+     *
+     *  We intercept these in dispatchKeyEvent so that focused buttons and
+     *  scrollable views never consume them first.
      */
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN && player != null) {
+            switch (event.getKeyCode()) {
+                case KeyEvent.KEYCODE_SPACE:
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                case KeyEvent.KEYCODE_PAGE_UP:
+                case KeyEvent.KEYCODE_PAGE_DOWN:
+                case KeyEvent.KEYCODE_R:
+                case KeyEvent.KEYCODE_PLUS:
+                case KeyEvent.KEYCODE_NUMPAD_ADD:
+                case KeyEvent.KEYCODE_EQUALS:
+                case KeyEvent.KEYCODE_MINUS:
+                case KeyEvent.KEYCODE_NUMPAD_SUBTRACT:
+                    return onKeyDown(event.getKeyCode(), event);
+            }
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (player == null) {
@@ -381,6 +405,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
                 return true;
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_NUMPAD_ADD:
+            case KeyEvent.KEYCODE_EQUALS:
                 player.SpeedUp();
                 return true;
             case KeyEvent.KEYCODE_MINUS:
