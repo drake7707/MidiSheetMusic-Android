@@ -395,6 +395,7 @@ public class SettingsActivity extends AppCompatActivity {
             countInMeasures.setTitle(R.string.count_in_measures);
             countInMeasures.setEntries(R.array.count_in_measures_entries);
             countInMeasures.setEntryValues(R.array.count_in_measures_values);
+            countInMeasures.setPersistent(false);
             countInMeasures.setValueIndex(options.countInMeasures);
             root.addPreference(countInMeasures);
         }
