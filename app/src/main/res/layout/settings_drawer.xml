@@ -2,6 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="280dp"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="?android:colorBackground"
     android:elevation="8dp">
 

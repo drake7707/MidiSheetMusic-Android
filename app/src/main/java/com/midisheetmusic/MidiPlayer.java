@@ -782,6 +782,25 @@ public class MidiPlayer extends LinearLayout {
         return playstate == midi;
     }
 
+    /** Release all resources held by this player.
+     *  Must be called when the hosting activity is destroyed to prevent
+     *  MediaPlayer leaks (and the associated battery drain from a player
+     *  left running in the background).
+     */
+    public void cleanup() {
+        timer.removeCallbacks(TimerCallback);
+        timer.removeCallbacks(DoPlay);
+        timer.removeCallbacks(ReShade);
+        if (player != null) {
+            if (playstate == playing) {
+                player.stop();
+            }
+            player.release();
+            player = null;
+        }
+        playstate = stopped;
+    }
+
     public void setDrawerLayout(DrawerLayout drawerLayout) {
         this.drawerLayout = drawerLayout;
     }
