@@ -81,6 +81,13 @@ public class MidiPlayer extends LinearLayout {
     private TextView speedText;
     /** The seekbar for controlling playback speed */
     private SeekBar speedBar;
+    /** Toolbar buttons referenced for speedBar resize calculation */
+    private ImageButton backButton;
+    private ImageButton rewindButton;
+    private ImageButton resetButton;
+    private ImageButton playButton;
+    private ImageButton fastFwdButton;
+    private ImageButton settingsButton;
     private DrawerLayout drawerLayout;
 
     /** The index corresponding to left/right hand in the track list */
@@ -190,12 +197,12 @@ public class MidiPlayer extends LinearLayout {
     void init() {
         inflate(activity, R.layout.player_toolbar, this);
 
-        ImageButton backButton = findViewById(R.id.btn_back);
-        ImageButton rewindButton = findViewById(R.id.btn_rewind);
-        ImageButton resetButton = findViewById(R.id.btn_replay);
-        ImageButton playButton = findViewById(R.id.btn_play);
-        ImageButton fastFwdButton = findViewById(R.id.btn_forward);
-        ImageButton settingsButton = findViewById(R.id.btn_settings);
+        backButton = findViewById(R.id.btn_back);
+        rewindButton = findViewById(R.id.btn_rewind);
+        resetButton = findViewById(R.id.btn_replay);
+        playButton = findViewById(R.id.btn_play);
+        fastFwdButton = findViewById(R.id.btn_forward);
+        settingsButton = findViewById(R.id.btn_settings);
         leftHandButton = findViewById(R.id.btn_left);
         rightHandButton = findViewById(R.id.btn_right);
         midiButton = findViewById(R.id.btn_midi);
@@ -219,17 +226,7 @@ public class MidiPlayer extends LinearLayout {
         pianoButton.setOnClickListener(v -> togglePiano());
 
         // Resize the speedBar so all toolbar icons fit on the screen
-        speedBar.post(
-                () -> {
-                    int iconsWidth = backButton.getWidth() + resetButton.getWidth() + playButton.getWidth() +
-                            rewindButton.getWidth() + fastFwdButton.getWidth() + midiButton.getWidth() +
-                            leftHandButton.getWidth() + rightHandButton.getWidth() + pianoButton.getWidth() +
-                            settingsButton.getWidth();
-                    Rect bounds = activity.getWindowManager().getCurrentWindowMetrics().getBounds();
-                    speedBar.setLayoutParams(
-                            new LayoutParams(bounds.width() - iconsWidth - 16, speedBar.getHeight()));
-                }
-        );
+        resizeSpeedBar();
 
         speedBar.getProgressDrawable().setColorFilter(
                 new BlendModeColorFilter(Color.parseColor("#00BB87"), BlendMode.SRC_IN));
@@ -293,6 +290,21 @@ public class MidiPlayer extends LinearLayout {
 
         if (sheet != null)
             sheet.ReCalculateZoom();
+    }
+
+    /** Recalculate and apply the SeekBar width so it fills the remaining toolbar space.
+     *  Must be called after a layout pass (uses post()), safe to call on orientation changes.
+     */
+    public void resizeSpeedBar() {
+        speedBar.post(() -> {
+            int iconsWidth = backButton.getWidth() + resetButton.getWidth() + playButton.getWidth() +
+                    rewindButton.getWidth() + fastFwdButton.getWidth() + midiButton.getWidth() +
+                    leftHandButton.getWidth() + rightHandButton.getWidth() + pianoButton.getWidth() +
+                    settingsButton.getWidth();
+            Rect bounds = activity.getWindowManager().getCurrentWindowMetrics().getBounds();
+            speedBar.setLayoutParams(
+                    new LayoutParams(bounds.width() - iconsWidth - 16, speedBar.getHeight()));
+        });
     }
 
     /** Update the status of the toolbar buttons (show, hide, opacity, etc.) */

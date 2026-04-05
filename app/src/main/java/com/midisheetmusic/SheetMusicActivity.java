@@ -305,6 +305,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
             if (midifile != null && options != null) {
                 createSheetMusic(options);
             }
+            player.resizeSpeedBar();
         }
     }
 
