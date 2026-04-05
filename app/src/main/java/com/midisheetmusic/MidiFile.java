@@ -939,6 +939,8 @@ public class MidiFile {
     private void PrependCountInEvents(ArrayList<ArrayList<MidiEvent>> tracks,
                                       int countInMeasures, TimeSignature ts) {
         if (countInMeasures <= 0 || tracks.isEmpty()) {
+            android.util.Log.d("CountIn", "PrependCountInEvents: skipped (countInMeasures="
+                    + countInMeasures + " tracks.size=" + tracks.size() + ")");
             return;
         }
         ArrayList<MidiEvent> countInEvents = CreateCountInEvents(countInMeasures, ts);
@@ -946,6 +948,12 @@ public class MidiFile {
 
         int beatPulses = ts.getMeasure() / ts.getNumerator();
         int tickDur = Math.max(1, beatPulses / 4);
+
+        android.util.Log.d("CountIn", "PrependCountInEvents: tracks=" + tracks.size()
+                + " firstTrackSize=" + firstTrack.size()
+                + " countInEvents=" + countInEvents.size()
+                + " beatPulses=" + beatPulses + " tickDur=" + tickDur
+                + " ts=" + ts);
 
         /* The tempo event is at index 0 with DeltaTime=0; insert count-in after it.
          * The caller (ApplyOptionsToEvents / ApplyOptionsPerChannel) always prepends
@@ -961,9 +969,17 @@ public class MidiFile {
              *   (T + totalBeats*beatPulses) - ((totalBeats-1)*beatPulses + tickDur)
              *   = T + beatPulses - tickDur
              * so we add (beatPulses - tickDur) to the existing DeltaTime T. */
+            int originalDelta = firstTrack.get(insertPos).DeltaTime;
             firstTrack.get(insertPos).DeltaTime += beatPulses - tickDur;
+            android.util.Log.d("CountIn", "PrependCountInEvents: adjusted event[" + insertPos
+                    + "] DeltaTime " + originalDelta + " -> " + firstTrack.get(insertPos).DeltaTime
+                    + " eventFlag=0x" + Integer.toHexString(firstTrack.get(insertPos).EventFlag & 0xFF));
+        } else {
+            android.util.Log.d("CountIn", "PrependCountInEvents: firstTrack too short (size="
+                    + firstTrack.size() + "), no DeltaTime adjustment");
         }
         firstTrack.addAll(insertPos, countInEvents);
+        android.util.Log.d("CountIn", "PrependCountInEvents: firstTrack size after insert=" + firstTrack.size());
     }
 
     /** Create a new Midi tempo event, with the given tempo  */
@@ -1143,7 +1159,14 @@ public class MidiFile {
         }
         if (options.countInMeasures > 0 && options.pauseTime == 0) {
             TimeSignature ts = (options.time != null) ? options.time : timesig;
+            android.util.Log.d("CountIn", "ApplyOptionsToEvents: calling PrependCountInEvents"
+                    + " countInMeasures=" + options.countInMeasures
+                    + " result.size=" + result.size());
             PrependCountInEvents(result, options.countInMeasures, ts);
+        } else {
+            android.util.Log.d("CountIn", "ApplyOptionsToEvents: skipping count-in"
+                    + " countInMeasures=" + options.countInMeasures
+                    + " pauseTime=" + options.pauseTime);
         }
         return result;
     }
@@ -1216,7 +1239,14 @@ public class MidiFile {
         }
         if (options.countInMeasures > 0 && options.pauseTime == 0) {
             TimeSignature ts = (options.time != null) ? options.time : timesig;
+            android.util.Log.d("CountIn", "ApplyOptionsPerChannel: calling PrependCountInEvents"
+                    + " countInMeasures=" + options.countInMeasures
+                    + " newevents.size=" + newevents.size());
             PrependCountInEvents(newevents, options.countInMeasures, ts);
+        } else {
+            android.util.Log.d("CountIn", "ApplyOptionsPerChannel: skipping count-in"
+                    + " countInMeasures=" + options.countInMeasures
+                    + " pauseTime=" + options.pauseTime);
         }
         return newevents;
     }

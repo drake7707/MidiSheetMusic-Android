@@ -413,6 +413,11 @@ public class MidiPlayer extends LinearLayout {
         options.tempo = (int)(1.0 / inverse_tempo_scaled);
         pulsesPerMsec = midifile.getTime().getQuarter() * (1000.0 / options.tempo);
 
+        android.util.Log.d("CountIn", "CreateMidiFile: countInMeasures=" + options.countInMeasures
+                + " pauseTime=" + options.pauseTime
+                + " tempo=" + options.tempo
+                + " timesig=" + midifile.getTime());
+
         try {
             FileOutputStream dest = activity.openFileOutput(tempSoundFile, Context.MODE_PRIVATE);
             midifile.ChangeSound(dest, options);
@@ -536,6 +541,11 @@ public class MidiPlayer extends LinearLayout {
             prevPulseTime = options.shifttime - countInPulses - midifile.getTime().getQuarter();
         }
 
+        android.util.Log.d("CountIn", "DoPlay: playstate=" + playstate
+                + " countInMeasures=" + options.countInMeasures
+                + " pauseTime=" + options.pauseTime
+                + " startPulseTime=" + startPulseTime
+                + " currentPulseTime=" + currentPulseTime);
         CreateMidiFile();
         playstate = playing;
         PlaySound(tempSoundFile);
