@@ -303,7 +303,7 @@ public class MidiPlayer extends LinearLayout {
                     settingsButton.getWidth();
             Rect bounds = activity.getWindowManager().getCurrentWindowMetrics().getBounds();
             speedBar.setLayoutParams(
-                    new LayoutParams(bounds.width() - iconsWidth - 16, speedBar.getHeight()));
+                    new LayoutParams(Math.max(bounds.width() - iconsWidth - 196, 120), speedBar.getHeight()));
         });
     }
 
