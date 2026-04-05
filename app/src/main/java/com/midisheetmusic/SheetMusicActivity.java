@@ -47,6 +47,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.zip.CRC32;
 
 /**
@@ -72,6 +74,11 @@ public class SheetMusicActivity extends MidiHandlingActivity {
     private MidiOptions options;
     private long midiCRC;
     private DrawerLayout drawerLayout;
+
+    /** Tracks key codes for which we consumed the ACTION_DOWN, so that an orphan
+     *  ACTION_UP (whose ACTION_DOWN was eaten by a SurfaceView focus-steal) can
+     *  still trigger the action. */
+    private final Set<Integer> handledDownKeys = new HashSet<>();
 
     // Drawer views
     private SwitchCompat switchScrollVert;
@@ -364,21 +371,35 @@ public class SheetMusicActivity extends MidiHandlingActivity {
         Log.d("KeyDispatch", "action=" + event.getAction()
                 + " keyCode=" + event.getKeyCode()
                 + " keyName=" + KeyEvent.keyCodeToString(event.getKeyCode()));
-        if (event.getAction() == KeyEvent.ACTION_DOWN && player != null) {
-            switch (event.getKeyCode()) {
-                case KeyEvent.KEYCODE_SPACE:
-                case KeyEvent.KEYCODE_DPAD_LEFT:
-                case KeyEvent.KEYCODE_DPAD_RIGHT:
-                case KeyEvent.KEYCODE_PAGE_UP:
-                case KeyEvent.KEYCODE_PAGE_DOWN:
-                case KeyEvent.KEYCODE_R:
-                case KeyEvent.KEYCODE_PLUS:
-                case KeyEvent.KEYCODE_NUMPAD_ADD:
-                case KeyEvent.KEYCODE_EQUALS:
-                case KeyEvent.KEYCODE_MINUS:
-                case KeyEvent.KEYCODE_NUMPAD_SUBTRACT:
-                    return onKeyDown(event.getKeyCode(), event);
-            }
+        if (player == null) {
+            return super.dispatchKeyEvent(event);
+        }
+        int keyCode = event.getKeyCode();
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_SPACE:
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+            case KeyEvent.KEYCODE_PAGE_UP:
+            case KeyEvent.KEYCODE_PAGE_DOWN:
+            case KeyEvent.KEYCODE_R:
+            case KeyEvent.KEYCODE_PLUS:
+            case KeyEvent.KEYCODE_NUMPAD_ADD:
+            case KeyEvent.KEYCODE_EQUALS:
+            case KeyEvent.KEYCODE_MINUS:
+            case KeyEvent.KEYCODE_NUMPAD_SUBTRACT:
+                if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                    handledDownKeys.add(keyCode);
+                    return onKeyDown(keyCode, event);
+                } else if (event.getAction() == KeyEvent.ACTION_UP) {
+                    if (!handledDownKeys.remove(keyCode)) {
+                        // ACTION_DOWN was eaten by a SurfaceView focus-steal; fire the
+                        // action now on the orphan ACTION_UP so the first keystroke
+                        // after a tap is not silently lost.
+                        return onKeyDown(keyCode, event);
+                    }
+                    return true;
+                }
+                break;
         }
         return super.dispatchKeyEvent(event);
     }
