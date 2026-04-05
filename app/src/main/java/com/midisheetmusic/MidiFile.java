@@ -642,7 +642,7 @@ public class MidiFile {
                           " != 4", file.GetOffset());
                     }
                     else {
-                        mevent.Numerator = ((byte)mevent.Value[0]);
+                        mevent.Numerator = mevent.Value[0];
                         mevent.Denominator = ((byte)Math.pow(2, mevent.Value[1]));
                     }
                 }

@@ -193,6 +193,7 @@ public class MidiPlayer extends LinearLayout {
     }
 
     /** Create the rewind, play, stop, and fast forward buttons */
+    @SuppressWarnings("deprecation")
     void init() {
         inflate(activity, R.layout.player_toolbar, this);
 
@@ -360,7 +361,7 @@ public class MidiPlayer extends LinearLayout {
         if ((file == midifile && midifile != null && playstate == paused)) {
             options = opt;
             sheet = s;
-            sheet.ShadeNotes((int)currentPulseTime, (int)-1, SheetMusic.DontScroll);
+            sheet.ShadeNotes((int)currentPulseTime, -1, SheetMusic.DontScroll);
 
             /* We have to wait some time (200 msec) for the sheet music
              * to scroll and redraw, before we can re-shade.
@@ -381,7 +382,7 @@ public class MidiPlayer extends LinearLayout {
     Runnable ReShade = new Runnable() {
       public void run() {
         if (playstate == paused || playstate == stopped) {
-            sheet.ShadeNotes((int)currentPulseTime, (int)-10, SheetMusic.ImmediateScroll);
+            sheet.ShadeNotes((int)currentPulseTime, -10, SheetMusic.ImmediateScroll);
             piano.ShadeNotes((int)currentPulseTime, (int)prevPulseTime);
         }
       }

@@ -337,6 +337,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void onBackPressed() {
         saveOptions();

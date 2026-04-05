@@ -22,6 +22,7 @@ public abstract class MidiHandlingActivity extends AbstractSingleMidiActivity {
     abstract void OnMidiNote(int note, boolean pressed);
 
 
+    @SuppressWarnings("deprecation")
     @Override
     public void onDeviceAttached(@NonNull UsbDevice usbDevice) {
         //deprecated
@@ -42,6 +43,7 @@ public abstract class MidiHandlingActivity extends AbstractSingleMidiActivity {
     public void onMidiOutputDeviceAttached(@NonNull MidiOutputDevice midiOutputDevice) {
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void onDeviceDetached(@NonNull UsbDevice usbDevice) {
         //deprecated

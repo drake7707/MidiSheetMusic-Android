@@ -14,7 +14,7 @@ allprojects {
         mavenCentral()
         google()
         maven {
-            url 'https://github.com/joytunes/USB-MIDI-Driver/raw/master/MIDIDriver/snapshots'
+            url = 'https://github.com/joytunes/USB-MIDI-Driver/raw/master/MIDIDriver/snapshots'
         }
     }
 }

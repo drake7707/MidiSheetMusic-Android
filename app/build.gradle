@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace 'com.midisheetmusic'
+    namespace = 'com.midisheetmusic'
     compileSdk 35
 
     defaultConfig {
@@ -22,14 +22,11 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    tasks.withType(JavaCompile).configureEach {
-        options.compilerArgs += ["-Xlint:all", "-Xlint:-processing", "-Xlint:-serial"]
-    }
 }
 
 repositories {
     maven {
-        url 'https://github.com/joytunes/USB-MIDI-Driver/raw/master/MIDIDriver/snapshots'
+        url = 'https://github.com/joytunes/USB-MIDI-Driver/raw/master/MIDIDriver/snapshots'
     }
     mavenCentral()
     google()

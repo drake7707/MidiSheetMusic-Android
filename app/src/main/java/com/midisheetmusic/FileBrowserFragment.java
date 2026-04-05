@@ -106,7 +106,7 @@ public class FileBrowserFragment extends Fragment {
                 requireContext(), android.R.layout.simple_list_item_1, filelist);
         listView.setAdapter(adapter);
         listView.setOnItemClickListener((parent, v, position, id) -> {
-            FileUri file = (FileUri) adapter.getItem(position);
+            FileUri file = adapter.getItem(position);
             if (file.isDirectory()) {
                 String path = file.getUri().getPath();
                 if (path != null) loadDirectory(path);

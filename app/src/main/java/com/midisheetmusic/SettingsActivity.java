@@ -416,7 +416,7 @@ public class SettingsActivity extends AppCompatActivity {
 
                         return true;});
             delayStartInterval.setSummaryProvider((preference) -> {
-                return (Integer.parseInt((String)((ListPreference)preference).getValue()) / 1000) + " second(s)" ;
+                return (Integer.parseInt(((ListPreference)preference).getValue()) / 1000) + " second(s)" ;
             });
 
             delayStartInterval.setTitle(R.string.delay_start_interval);
@@ -453,7 +453,7 @@ public class SettingsActivity extends AppCompatActivity {
 
                 boolean isuseColorChecked = useColors.isChecked();
                 for (ColorPreference noteColorPref : noteColors) {
-                    noteColorPref.setVisible((boolean)isuseColorChecked);
+                    noteColorPref.setVisible(isuseColorChecked);
                 }
 
                 return true;
