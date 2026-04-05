@@ -2,81 +2,126 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="56dp"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
+    android:orientation="vertical"
     android:paddingStart="16dp"
     android:paddingEnd="4dp"
     android:paddingTop="4dp"
     android:paddingBottom="4dp">
 
-    <!-- Track title + instrument subtitle -->
+    <!-- Top row: title, instrument, and icon buttons -->
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
+        android:minHeight="56dp"
+        android:orientation="horizontal"
         android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/track_title"
-            android:layout_width="wrap_content"
+        <!-- Track title + instrument subtitle -->
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="?android:attr/textColorPrimary" />
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/track_instrument"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="13sp"
-            android:textColor="?android:attr/textColorSecondary" />
+            <TextView
+                android:id="@+id/track_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary" />
+
+            <TextView
+                android:id="@+id/track_instrument"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textColor="?android:attr/textColorSecondary" />
+        </LinearLayout>
+
+        <!-- Visibility toggle button -->
+        <ImageButton
+            android:id="@+id/btn_visibility"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/track_visibility"
+            android:padding="8dp"
+            android:src="@drawable/ic_visibility" />
+
+        <!-- Mute toggle button -->
+        <ImageButton
+            android:id="@+id/btn_mute"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/track_mute"
+            android:padding="8dp"
+            android:src="@drawable/ic_volume_up" />
+
+        <!-- Instrument picker button -->
+        <ImageButton
+            android:id="@+id/btn_instrument"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/track_instrument"
+            android:padding="8dp"
+            android:src="@drawable/ic_music_note" />
+
+        <!-- Octave shift button: cycles T / 8va / 8vb -->
+        <Button
+            android:id="@+id/btn_octave_shift"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="52dp"
+            android:layout_height="40dp"
+            android:minWidth="0dp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary"
+            android:contentDescription="@string/track_octave_shift"
+            android:text="T" />
+
     </LinearLayout>
 
-    <!-- Visibility toggle button -->
-    <ImageButton
-        android:id="@+id/btn_visibility"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/track_visibility"
-        android:padding="8dp"
-        android:src="@drawable/ic_visibility" />
+    <!-- Volume row: icon + slider + percentage label -->
+    <LinearLayout
+        android:id="@+id/volume_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="4dp">
 
-    <!-- Mute toggle button -->
-    <ImageButton
-        android:id="@+id/btn_mute"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/track_mute"
-        android:padding="8dp"
-        android:src="@drawable/ic_volume_up" />
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_volume_up"
+            android:contentDescription="@string/track_volume"
+            android:alpha="0.6" />
 
-    <!-- Instrument picker button -->
-    <ImageButton
-        android:id="@+id/btn_instrument"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/track_instrument"
-        android:padding="8dp"
-        android:src="@drawable/ic_music_note" />
+        <SeekBar
+            android:id="@+id/seek_volume"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:max="100"
+            android:progress="100" />
 
-    <!-- Octave shift button: cycles T / 8va / 8vb -->
-    <Button
-        android:id="@+id/btn_octave_shift"
-        style="?attr/borderlessButtonStyle"
-        android:layout_width="52dp"
-        android:layout_height="40dp"
-        android:minWidth="0dp"
-        android:paddingStart="2dp"
-        android:paddingEnd="2dp"
-        android:textSize="11sp"
-        android:textStyle="bold"
-        android:textColor="?android:attr/textColorPrimary"
-        android:contentDescription="@string/track_octave_shift"
-        android:text="T" />
+        <TextView
+            android:id="@+id/txt_volume"
+            android:layout_width="36dp"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:gravity="end"
+            android:text="100" />
+
+    </LinearLayout>
 
 </LinearLayout>

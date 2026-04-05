@@ -1093,9 +1093,11 @@ public class MidiFile {
          */
         int[] instruments = new int[16];
         boolean[] keepchannel = new boolean[16];
+        int[] channelVolume = new int[16];
         for (int i = 0; i < 16; i++) {
             instruments[i] = 0;
             keepchannel[i] = true;
+            channelVolume[i] = 100;
         }
         for (int tracknum = 0; tracknum < tracks.size(); tracknum++) {
             MidiTrack track = tracks.get(tracknum);
@@ -1103,6 +1105,9 @@ public class MidiFile {
             instruments[channel] = options.instruments[tracknum];
             if (!options.tracks[tracknum] || options.mute[tracknum]) {
                 keepchannel[channel] = false;
+            }
+            if (options.volume != null && tracknum < options.volume.length) {
+                channelVolume[channel] = options.volume[tracknum];
             }
         }
         
@@ -1125,6 +1130,9 @@ public class MidiFile {
                 mevent.Notenumber = (byte)num;
                 if (!keepchannel[mevent.Channel]) {
                     mevent.Velocity = 0;
+                } else {
+                    int vol = channelVolume[mevent.Channel];
+                    mevent.Velocity = (byte)((mevent.Velocity * vol) / 100);
                 }
                 if (!options.useDefaultInstruments) {
                     mevent.Instrument = (byte)instruments[mevent.Channel];
