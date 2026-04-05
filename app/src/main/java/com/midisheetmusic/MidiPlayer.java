@@ -18,7 +18,6 @@ import android.graphics.BlendMode;
 import android.graphics.BlendModeColorFilter;
 import android.graphics.Color;
 import android.graphics.Point;
-import android.graphics.Rect;
 import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Looper;
@@ -300,10 +299,10 @@ public class MidiPlayer extends LinearLayout {
             int iconsWidth = backButton.getWidth() + resetButton.getWidth() + playButton.getWidth() +
                     rewindButton.getWidth() + fastFwdButton.getWidth() + midiButton.getWidth() +
                     leftHandButton.getWidth() + rightHandButton.getWidth() + pianoButton.getWidth() +
-                    settingsButton.getWidth();
-            Rect bounds = activity.getWindowManager().getCurrentWindowMetrics().getBounds();
+                    settingsButton.getWidth() + speedText.getWidth();
+            int toolbarWidth = MidiPlayer.this.getWidth();
             speedBar.setLayoutParams(
-                    new LayoutParams(Math.max(bounds.width() - iconsWidth - 196, 120), speedBar.getHeight()));
+                    new LayoutParams(Math.max(toolbarWidth - iconsWidth, 0), speedBar.getHeight()));
         });
     }
 

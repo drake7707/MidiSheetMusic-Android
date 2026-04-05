@@ -24,8 +24,15 @@
         <item name="colorPrimaryDark">@color/primaryDark</item>
     </style>
 
+    <!-- Dark theme for SettingsActivity (matches the rest of the dark UI, no fullscreen) -->
+    <style name="SettingsTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorAccent">@color/accent</item>
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primaryDark</item>
+    </style>
+
     <style name="ToolbarButtonStyle" parent="@android:style/Widget.Material.Button.Borderless">
-        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_width">32dp</item>
         <item name="android:layout_height">40dp</item>
     </style>
 

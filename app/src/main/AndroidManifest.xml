@@ -33,7 +33,7 @@
             android:name=".SettingsActivity"
             android:exported="false"
             android:label="@string/title_activity_settings"
-            android:theme="@style/AppTheme" />
+            android:theme="@style/SettingsTheme" />
 
         <activity
             android:name=".HelpActivity"
