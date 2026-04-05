@@ -67,5 +67,7 @@
     <string name="octave_shift_8va">8va</string>
     <string name="octave_shift_8vb">8vb</string>
     <string name="home">Home</string>
+    <string name="treble_clef">Treble clef (right hand)</string>
+    <string name="bass_clef">Bass clef (left hand)</string>
 
 </resources>

@@ -76,8 +76,8 @@ import java.util.Locale;
  */
 public class MidiPlayer extends LinearLayout {
     private Button midiButton;
-    private Button leftHandButton;
-    private Button rightHandButton;
+    private ImageButton leftHandButton;
+    private ImageButton rightHandButton;
     private ImageButton pianoButton;
     /** The "Speed %" label */
     private TextView speedText;
@@ -95,6 +95,8 @@ public class MidiPlayer extends LinearLayout {
     /** The index corresponding to left/right hand in the track list */
     private static final int LEFT_TRACK = 1;
     private static final int RIGHT_TRACK = 0;
+    /** Microseconds per minute, used for BPM calculation */
+    private static final float MICROSECONDS_PER_MINUTE = 60_000_000.0f;
 
     int playstate;               /** The playing state of the Midi Player */
     final int stopped   = 1;     /** Currently stopped */
@@ -249,7 +251,7 @@ public class MidiPlayer extends LinearLayout {
                     progress = 100;
                     bar.setProgress(progress);
                 }
-                speedText.setText(String.format(Locale.US, "%3d", progress) + "%");
+                updateSpeedText(progress);
             }
             public void onStartTrackingTouch(SeekBar bar) {
             }
@@ -262,6 +264,16 @@ public class MidiPlayer extends LinearLayout {
          * the timer yet (enabled = false).
          */
         timer = new Handler(Looper.getMainLooper());
+    }
+
+    /** Update the speed text to show the current percentage and BPM. */
+    private void updateSpeedText(int progress) {
+        String text = String.format(Locale.US, "%3d%%", progress);
+        if (midifile != null) {
+            int bpm = Math.round(MICROSECONDS_PER_MINUTE * progress / (midifile.getTime().getTempo() * 100.0f));
+            text += "\n" + bpm + "bpm";
+        }
+        speedText.setText(text);
     }
 
     private void toggleMidi() {
@@ -346,15 +358,13 @@ public class MidiPlayer extends LinearLayout {
     }
 
     /** Determine the measured width and height.
-     *  Resize the individual buttons according to the new width/height.
+     *  Use a fixed toolbar height (from dimens) so portrait and landscape are consistent.
      */
     @Override
     protected void onMeasure(int widthspec, int heightspec) {
         super.onMeasure(widthspec, heightspec);
         int screenwidth = MeasureSpec.getSize(widthspec);
-        /* Make the button height 2/3 the piano WhiteKeyHeight */
-        int height = (int) (5.0 * screenwidth / ( 2 + Piano.KeysPerOctave * Piano.MaxOctave));
-        height = height * 2/3;
+        int height = (int) getResources().getDimension(R.dimen.toolbar_height);
         setMeasuredDimension(screenwidth, height);
     }
 
@@ -387,6 +397,7 @@ public class MidiPlayer extends LinearLayout {
             midifile = file;
             options = opt;
             sheet = s;
+            updateSpeedText(speedBar.getProgress());
             ScrollToStart();
         }
     }
