@@ -277,6 +277,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
     /** Create the SheetMusic view with the given options */
     private void createSheetMusic(MidiOptions options) {
         if (sheet != null) {
+            sheet.cleanup();
             layout.removeView(sheet);
         }
         piano.setVisibility(options.showPiano ? View.VISIBLE : View.GONE);

@@ -22,6 +22,7 @@ import android.view.MenuItem;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.IntentCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.os.BundleCompat;
 import androidx.fragment.app.Fragment;
 import androidx.preference.ListPreference;
@@ -65,6 +66,10 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // On Android 15+ edge-to-edge is enforced for all apps. Opt back into the
+        // traditional window-insets behaviour for this settings screen so the
+        // ActionBar is placed below the status bar automatically.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         setContentView(R.layout.settings_activity);
         options = IntentCompat.getSerializableExtra(getIntent(), settingsID, MidiOptions.class);
         defaultOptions = IntentCompat.getSerializableExtra(getIntent(), defaultSettingsID, MidiOptions.class);
