@@ -23,6 +23,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
@@ -45,6 +47,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.zip.CRC32;
 
 /**
@@ -70,6 +74,11 @@ public class SheetMusicActivity extends MidiHandlingActivity {
     private MidiOptions options;
     private long midiCRC;
     private DrawerLayout drawerLayout;
+
+    /** Tracks key codes for which we consumed the ACTION_DOWN, so that an orphan
+     *  ACTION_UP (whose ACTION_DOWN was eaten by a SurfaceView focus-steal) can
+     *  still trigger the action. */
+    private final Set<Integer> handledDownKeys = new HashSet<>();
 
     // Drawer views
     private SwitchCompat switchScrollVert;
@@ -342,6 +351,95 @@ public class SheetMusicActivity extends MidiHandlingActivity {
     public void onBackPressed() {
         saveOptions();
         super.onBackPressed();
+    }
+
+    /** Handle keyboard shortcuts for the player controls:
+     *  Space          - Play / Pause toggle
+     *  Left arrow     - Previous note
+     *  Right arrow    - Next note
+     *  Page Up        - Previous measure
+     *  Page Down      - Next measure
+     *  R              - Restart
+     *  + / = / Numpad + - Speed up 10%
+     *  - / Numpad -   - Speed down 10%
+     *
+     *  We intercept these in dispatchKeyEvent so that focused buttons and
+     *  scrollable views never consume them first.
+     */
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        Log.d("KeyDispatch", "action=" + event.getAction()
+                + " keyCode=" + event.getKeyCode()
+                + " keyName=" + KeyEvent.keyCodeToString(event.getKeyCode()));
+        if (player == null) {
+            return super.dispatchKeyEvent(event);
+        }
+        int keyCode = event.getKeyCode();
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_SPACE:
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+            case KeyEvent.KEYCODE_PAGE_UP:
+            case KeyEvent.KEYCODE_PAGE_DOWN:
+            case KeyEvent.KEYCODE_R:
+            case KeyEvent.KEYCODE_PLUS:
+            case KeyEvent.KEYCODE_NUMPAD_ADD:
+            case KeyEvent.KEYCODE_EQUALS:
+            case KeyEvent.KEYCODE_MINUS:
+            case KeyEvent.KEYCODE_NUMPAD_SUBTRACT:
+                if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                    handledDownKeys.add(keyCode);
+                    return onKeyDown(keyCode, event);
+                } else if (event.getAction() == KeyEvent.ACTION_UP) {
+                    if (!handledDownKeys.remove(keyCode)) {
+                        // ACTION_DOWN was eaten by a SurfaceView focus-steal; fire the
+                        // action now on the orphan ACTION_UP so the first keystroke
+                        // after a tap is not silently lost.
+                        return onKeyDown(keyCode, event);
+                    }
+                    return true;
+                }
+                break;
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (player == null) {
+            return super.onKeyDown(keyCode, event);
+        }
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_SPACE:
+                player.PlayPause();
+                return true;
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                player.PrevNote();
+                return true;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                player.NextNote();
+                return true;
+            case KeyEvent.KEYCODE_PAGE_UP:
+                player.Rewind();
+                return true;
+            case KeyEvent.KEYCODE_PAGE_DOWN:
+                player.FastForward();
+                return true;
+            case KeyEvent.KEYCODE_R:
+                player.Reset();
+                return true;
+            case KeyEvent.KEYCODE_PLUS:
+            case KeyEvent.KEYCODE_NUMPAD_ADD:
+            case KeyEvent.KEYCODE_EQUALS:
+                player.SpeedUp();
+                return true;
+            case KeyEvent.KEYCODE_MINUS:
+            case KeyEvent.KEYCODE_NUMPAD_SUBTRACT:
+                player.SpeedDown();
+                return true;
+            default:
+                return super.onKeyDown(keyCode, event);
+        }
     }
 
     /** Show the "Save As Images" dialog */

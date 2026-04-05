@@ -1518,6 +1518,20 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
         return null;
     }
 
+    /** Return the last ChordSymbol whose start time is strictly before currentTime,
+     *  across all staffs (returns the one with the greatest such start time).
+     */
+    public MusicSymbol getPrevNote(int currentTime) {
+        MusicSymbol result = null;
+        for (int i = 0; i < staffs.size(); ++i) {
+            MusicSymbol note = staffs.get(i).getPrevNote(currentTime);
+            if (note != null && (result == null || note.getStartTime() > result.getStartTime())) {
+                result = note;
+            }
+        }
+        return result;
+    }
+
     @Override
     public String toString() {
         String result = "SheetMusic staffs=" + staffs.size() + "\n";

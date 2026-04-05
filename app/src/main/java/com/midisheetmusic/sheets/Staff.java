@@ -386,6 +386,24 @@ public class Staff {
         return null;
     }
 
+    /** Return the last ChordSymbol whose start time is strictly before currentPulseTime,
+     *  or null if no such chord exists.
+     */
+    public MusicSymbol getPrevNote(int currentPulseTime) {
+        MusicSymbol result = null;
+        for (int i = 0; i < symbols.size(); ++i) {
+            MusicSymbol cur = symbols.get(i);
+            if (cur instanceof ChordSymbol) {
+                if (cur.getStartTime() < currentPulseTime) {
+                    result = cur;
+                } else {
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
     /** Shade all the chords played in the given time.
      *  Un-shade any chords shaded in the previous pulse time.
      *  Store the x coordinate location where the shade was drawn.
