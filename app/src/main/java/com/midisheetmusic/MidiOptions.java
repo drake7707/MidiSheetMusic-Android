@@ -65,7 +65,7 @@ public class MidiOptions implements Serializable {
     public boolean useColors;
     public boolean colorAccidentals;        /** Will set RED as color for sharps and flats */
     public boolean useFullHeight;           /** Will enlarge the graphics to the full screen */
-    public int     delayStartInterval;      /** Delay playing after the play button is pressed **/
+    public int     countInMeasures;         /** Number of count-in measures (beat clicks) before playback **/
 
     public int[] noteColors;
     public int midiShift;
@@ -181,7 +181,7 @@ public class MidiOptions implements Serializable {
             json.put("midiShift", midiShift);
             json.put("key", key);
             json.put("combineInterval", combineInterval);
-            json.put("delayStartInterval", delayStartInterval);
+            json.put("countInMeasures", countInMeasures);
             json.put("shade1Color", shade1Color);
             json.put("shade2Color", shade2Color);
             json.put("useColors", useColors);
@@ -279,12 +279,14 @@ public class MidiOptions implements Serializable {
                 options.colorAccidentals = json.getBoolean("colorAccidentals");
             }
 
-            if (json.has("delayStartInterval")) {
-                options.delayStartInterval = json.getInt("delayStartInterval");
-            }
-            else
-            {
-                options.delayStartInterval =0;
+            if (json.has("countInMeasures")) {
+                options.countInMeasures = json.getInt("countInMeasures");
+            } else if (json.has("delayStartInterval")) {
+                /* Migrate legacy delayStartInterval (milliseconds) to countInMeasures */
+                int legacyDelayMs = json.getInt("delayStartInterval");
+                options.countInMeasures = legacyDelayMs / 1000;
+            } else {
+                options.countInMeasures = 0;
             }
             options.showMeasures = json.getBoolean("showMeasures");
             options.playMeasuresInLoop = json.getBoolean("playMeasuresInLoop");
@@ -343,6 +345,7 @@ public class MidiOptions implements Serializable {
         playMeasuresInLoop = saved.playMeasuresInLoop;
         playMeasuresInLoopStart = saved.playMeasuresInLoopStart;
         playMeasuresInLoopEnd = saved.playMeasuresInLoopEnd;
+        countInMeasures = saved.countInMeasures;
     }
  
 
@@ -410,6 +413,7 @@ public class MidiOptions implements Serializable {
         
         options.shifttime = shifttime;
         options.largeNoteSize = largeNoteSize;
+        options.countInMeasures = countInMeasures;
         return options; 
     }
 }

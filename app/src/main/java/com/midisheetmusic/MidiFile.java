@@ -891,6 +891,71 @@ public class MidiFile {
         return newlist;
     }
 
+    /** Create NoteOn/NoteOff events for a percussion count-in.
+     *  Returns a list of events to prepend to the first track (before real notes).
+     *  Beat 1 of each measure uses note 76 (High Wood Block) at velocity 100;
+     *  other beats use note 77 (Low Wood Block) at velocity 80.
+     */
+    private static ArrayList<MidiEvent> CreateCountInEvents(int countInMeasures, TimeSignature ts) {
+        ArrayList<MidiEvent> events = new ArrayList<MidiEvent>();
+        int beatPulses = ts.getMeasure() / ts.getNumerator();
+        int tickDur = Math.max(1, beatPulses / 4);
+        int totalBeats = countInMeasures * ts.getNumerator();
+
+        for (int i = 0; i < totalBeats; i++) {
+            boolean isBeat1 = (i % ts.getNumerator() == 0);
+            byte note = isBeat1 ? (byte)76 : (byte)77; /* High / Low Wood Block */
+            byte velocity = isBeat1 ? (byte)100 : (byte)80;
+
+            /* NoteOn */
+            MidiEvent noteOn = new MidiEvent();
+            noteOn.DeltaTime = (i == 0) ? 0 : (beatPulses - tickDur);
+            noteOn.StartTime = i * beatPulses;
+            noteOn.HasEventflag = true;
+            noteOn.EventFlag = EventNoteOn;
+            noteOn.Channel = 9; /* Percussion channel */
+            noteOn.Notenumber = note;
+            noteOn.Velocity = velocity;
+            events.add(noteOn);
+
+            /* NoteOff */
+            MidiEvent noteOff = new MidiEvent();
+            noteOff.DeltaTime = tickDur;
+            noteOff.StartTime = i * beatPulses + tickDur;
+            noteOff.HasEventflag = true;
+            noteOff.EventFlag = EventNoteOff;
+            noteOff.Channel = 9;
+            noteOff.Notenumber = note;
+            noteOff.Velocity = 0;
+            events.add(noteOff);
+        }
+        return events;
+    }
+
+    /** Prepend count-in click events to the first track in the event list.
+     *  The first real event's DeltaTime is adjusted so that real notes start
+     *  exactly countInMeasures * measure pulses after the MIDI file begins.
+     */
+    private void PrependCountInEvents(ArrayList<ArrayList<MidiEvent>> tracks,
+                                      int countInMeasures, TimeSignature ts) {
+        if (countInMeasures <= 0 || tracks.isEmpty()) {
+            return;
+        }
+        ArrayList<MidiEvent> countInEvents = CreateCountInEvents(countInMeasures, ts);
+        ArrayList<MidiEvent> firstTrack = tracks.get(0);
+
+        int beatPulses = ts.getMeasure() / ts.getNumerator();
+        int tickDur = Math.max(1, beatPulses / 4);
+
+        /* The tempo event is at index 0 with DeltaTime=0; insert after it. */
+        int insertPos = 1;
+        if (firstTrack.size() > insertPos) {
+            /* Shift the first real event forward so it starts after the count-in. */
+            firstTrack.get(insertPos).DeltaTime += beatPulses - tickDur;
+        }
+        firstTrack.addAll(insertPos, countInEvents);
+    }
+
     /** Create a new Midi tempo event, with the given tempo  */
     private static MidiEvent CreateTempoEvent(int tempo) {
         MidiEvent mevent = new MidiEvent();
@@ -1066,6 +1131,10 @@ public class MidiFile {
                 i++;
             }
         }
+        if (options.countInMeasures > 0 && options.pauseTime == 0) {
+            TimeSignature ts = (options.time != null) ? options.time : timesig;
+            PrependCountInEvents(result, options.countInMeasures, ts);
+        }
         return result;
     }
 
@@ -1134,6 +1203,10 @@ public class MidiFile {
         }
         if (options.pauseTime != 0) {
             newevents = StartAtPauseTime(newevents, options.pauseTime);
+        }
+        if (options.countInMeasures > 0 && options.pauseTime == 0) {
+            TimeSignature ts = (options.time != null) ? options.time : timesig;
+            PrependCountInEvents(newevents, options.countInMeasures, ts);
         }
         return newevents;
     }

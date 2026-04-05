@@ -503,7 +503,7 @@ public class MidiPlayer extends LinearLayout {
         this.setVisibility(View.GONE);
         RemoveShading();
         timer.removeCallbacks(TimerCallback);
-        timer.postDelayed(DoPlay, options.delayStartInterval);
+        timer.postDelayed(DoPlay, 0);
     }
 
     Runnable DoPlay = new Runnable() {
@@ -529,9 +529,11 @@ public class MidiPlayer extends LinearLayout {
         }
         else {
             options.pauseTime = 0;
-            startPulseTime = options.shifttime;
-            currentPulseTime = options.shifttime;
-            prevPulseTime = options.shifttime - midifile.getTime().getQuarter();
+            TimeSignature timesig = (options.time != null) ? options.time : midifile.getTime();
+            int countInPulses = options.countInMeasures * timesig.getMeasure();
+            startPulseTime = options.shifttime - countInPulses;
+            currentPulseTime = options.shifttime - countInPulses;
+            prevPulseTime = options.shifttime - countInPulses - midifile.getTime().getQuarter();
         }
 
         CreateMidiFile();

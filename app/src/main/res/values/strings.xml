@@ -25,8 +25,12 @@
     <string name="time_signature">Time Signature</string>
     <string name="combine_interval">Combine Interval</string>
     <string name="combine_interval_summary">Notes within the given interval (in milliseconds) are combined into a single chord</string>
-    <string name="delay_start_interval">Delay before start</string>
-    <string name="delay_start_interval_summary">Delay before staring music</string>
+    <string name="count_in_measures">Count-in measures</string>
+    <string name="count_in_measures_none">None</string>
+    <plurals name="count_in_measures_summary">
+        <item quantity="one">%d measure of beat clicks before playback</item>
+        <item quantity="other">%d measures of beat clicks before playback</item>
+    </plurals>
     <string name="right_hand_color">Right Hand Color</string>
     <string name="left_hand_color">Left Hand Color</string>
     <string name="show_measures">Show Measure Numbers</string>
