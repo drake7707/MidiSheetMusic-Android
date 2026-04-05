@@ -23,6 +23,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -360,6 +361,9 @@ public class SheetMusicActivity extends MidiHandlingActivity {
      */
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        Log.d("KeyDispatch", "action=" + event.getAction()
+                + " keyCode=" + event.getKeyCode()
+                + " keyName=" + KeyEvent.keyCodeToString(event.getKeyCode()));
         if (event.getAction() == KeyEvent.ACTION_DOWN && player != null) {
             switch (event.getKeyCode()) {
                 case KeyEvent.KEYCODE_SPACE:
