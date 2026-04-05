@@ -61,6 +61,7 @@
     <string name="track_mute">Toggle track mute</string>
     <string name="track_instrument">Change instrument</string>
     <string name="track_octave_shift">Octave shift</string>
+    <string name="track_volume">Track volume</string>
     <string name="track_number">Track %d</string>
     <string name="track_instrument_picker_title">Instrument for Track %d</string>
     <string name="octave_shift_none">T</string>

@@ -221,12 +221,14 @@ public class SettingsActivity extends AppCompatActivity {
 
             trackOptions = new TrackRowPreference[options.tracks.length];
             for (int i = 0; i < options.tracks.length; i++) {
+                int vol = (options.volume != null && i < options.volume.length) ? options.volume[i] : 100;
                 trackOptions[i] = new TrackRowPreference(
                         context, i,
                         options.tracks[i],
                         options.mute[i],
                         options.instruments[i],
-                        options.trackOctaveShift[i]);
+                        options.trackOctaveShift[i],
+                        vol);
                 root.addPreference(trackOptions[i]);
             }
 
@@ -489,6 +491,7 @@ public class SettingsActivity extends AppCompatActivity {
                 options.mute[i] = trackOptions[i].isTrackMuted();
                 options.instruments[i] = trackOptions[i].getInstrumentIndex();
                 options.trackOctaveShift[i] = trackOptions[i].getOctaveShift();
+                options.volume[i] = trackOptions[i].getVolume();
             }
             for (int i = 0; i < options.noteColors.length; i++) {
                 options.noteColors[i] = noteColors[i].getColor();

@@ -2,13 +2,13 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="56dp"
     android:orientation="horizontal"
-    android:gravity="center_vertical"
+    android:minHeight="56dp"
     android:paddingStart="16dp"
     android:paddingEnd="4dp"
     android:paddingTop="4dp"
-    android:paddingBottom="4dp">
+    android:paddingBottom="4dp"
+    android:gravity="center_vertical">
 
     <!-- Track title + instrument subtitle -->
     <LinearLayout
@@ -53,6 +53,25 @@
         android:contentDescription="@string/track_mute"
         android:padding="8dp"
         android:src="@drawable/ic_volume_up" />
+
+    <!-- Volume slider: inline, ~3–4 button widths wide -->
+    <SeekBar
+        android:id="@+id/seek_volume"
+        android:layout_width="140dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="2dp"
+        android:max="100"
+        android:progress="100" />
+
+    <TextView
+        android:id="@+id/txt_volume"
+        android:layout_width="30dp"
+        android:layout_height="wrap_content"
+        android:textSize="11sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:gravity="end"
+        android:text="100" />
 
     <!-- Instrument picker button -->
     <ImageButton

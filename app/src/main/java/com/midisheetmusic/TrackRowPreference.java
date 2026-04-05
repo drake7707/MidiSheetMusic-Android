@@ -11,6 +11,7 @@ import android.content.Context;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -37,16 +38,19 @@ public class TrackRowPreference extends Preference {
     private boolean muted;
     private int instrumentIndex;
     private int octaveShift; // 0 = none (T), 1 = 8va, -1 = 8vb
+    private int volume;      // 0–100
 
     public TrackRowPreference(Context context, int trackIndex,
                                boolean visible, boolean muted,
-                               int instrumentIndex, int octaveShift) {
+                               int instrumentIndex, int octaveShift,
+                               int volume) {
         super(context);
         this.trackIndex = trackIndex;
         this.visible = visible;
         this.muted = muted;
         this.instrumentIndex = instrumentIndex;
         this.octaveShift = octaveShift;
+        this.volume = volume;
 
         setLayoutResource(R.layout.preference_track_row);
         setSelectable(false);
@@ -70,6 +74,10 @@ public class TrackRowPreference extends Preference {
         return octaveShift;
     }
 
+    public int getVolume() {
+        return volume;
+    }
+
     // --- Bind the view ---
 
     @Override
@@ -82,6 +90,8 @@ public class TrackRowPreference extends Preference {
         ImageButton btnMute = (ImageButton) holder.findViewById(R.id.btn_mute);
         ImageButton btnInstrument = (ImageButton) holder.findViewById(R.id.btn_instrument);
         Button btnOctaveShift = (Button) holder.findViewById(R.id.btn_octave_shift);
+        SeekBar seekVolume = (SeekBar) holder.findViewById(R.id.seek_volume);
+        TextView txtVolume = (TextView) holder.findViewById(R.id.txt_volume);
 
         // Track title and current instrument subtitle
         titleView.setText(getContext().getString(R.string.track_number, trackIndex));
@@ -96,9 +106,24 @@ public class TrackRowPreference extends Preference {
 
         // Mute icon
         updateMuteIcon(btnMute);
+        seekVolume.setProgress(volume);
+        txtVolume.setText(String.valueOf(volume));
+        updateVolumeRowEnabled(seekVolume, txtVolume);
+
         btnMute.setOnClickListener(v -> {
             muted = !muted;
             updateMuteIcon(btnMute);
+            updateVolumeRowEnabled(seekVolume, txtVolume);
+        });
+
+        seekVolume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                volume = progress;
+                txtVolume.setText(String.valueOf(progress));
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         });
 
         // Instrument picker
@@ -125,6 +150,12 @@ public class TrackRowPreference extends Preference {
 
     private void updateMuteIcon(ImageButton btn) {
         btn.setImageResource(muted ? R.drawable.ic_volume_off : R.drawable.ic_volume_up);
+    }
+
+    private void updateVolumeRowEnabled(SeekBar seekVolume, TextView txtVolume) {
+        seekVolume.setEnabled(!muted);
+        seekVolume.setAlpha(muted ? 0.4f : 1.0f);
+        txtVolume.setAlpha(muted ? 0.4f : 1.0f);
     }
 
     private void updateOctaveShiftButton(Button btn) {

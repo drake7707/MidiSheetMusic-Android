@@ -54,6 +54,7 @@ public class MidiOptions implements Serializable {
     public int shade2Color;   /** The color to use for shading the left hand piano */
 
     public boolean[] mute;    /** Which tracks to mute (true = mute) */
+    public int[] volume;      /** Per-track playback volume, 0–100 (100 = full, scales velocity) */
     public int  tempo;        /** The tempo, in microseconds per quarter note */
     public int  pauseTime;    /** Start the midi music at the given pause time */
 
@@ -80,9 +81,11 @@ public class MidiOptions implements Serializable {
         int num_tracks = midifile.getTracks().size();
         tracks = new boolean[num_tracks];
         mute = new boolean[num_tracks];
+        volume = new int[num_tracks];
         for (int i = 0; i < tracks.length; i++) {
             tracks[i] = true;
             mute[i] = false;
+            volume[i] = 100;
             if (midifile.getTracks().get(i).getInstrumentName().equals("Percussion")) {
                 tracks[i] = false;
                 mute[i] = true;
@@ -145,6 +148,10 @@ public class MidiOptions implements Serializable {
             for (boolean value : mute) {
                 jsonMute.put(value);
             }
+            JSONArray jsonVolume = new JSONArray();
+            for (int value : volume) {
+                jsonVolume.put(value);
+            }
             JSONArray jsonInstruments = new JSONArray();
             for (int value : instruments) {
                 jsonInstruments.put(value);
@@ -168,7 +175,8 @@ public class MidiOptions implements Serializable {
 
             json.put("versionCode", 7);
             json.put("tracks", jsonTracks); 
-            json.put("mute", jsonMute); 
+            json.put("mute", jsonMute);
+            json.put("volume", jsonVolume);
             json.put("instruments", jsonInstruments); 
             json.put("trackOctaveShift", jsonOctaveShift);
             json.put("useDefaultInstruments", useDefaultInstruments);
@@ -222,6 +230,19 @@ public class MidiOptions implements Serializable {
             for (int i = 0; i < options.mute.length; i++) {
                 options.mute[i] = jsonMute.getBoolean(i);
             } 
+
+            if (json.has("volume")) {
+                JSONArray jsonVolume = json.getJSONArray("volume");
+                options.volume = new int[jsonVolume.length()];
+                for (int i = 0; i < options.volume.length; i++) {
+                    options.volume[i] = jsonVolume.getInt(i);
+                }
+            } else {
+                options.volume = new int[options.mute.length];
+                for (int i = 0; i < options.volume.length; i++) {
+                    options.volume[i] = 100;
+                }
+            }
 
             JSONArray jsonInstruments = json.getJSONArray("instruments");
             options.instruments = new int[jsonInstruments.length()];
@@ -310,14 +331,14 @@ public class MidiOptions implements Serializable {
         if (saved.mute.length == mute.length) {
             System.arraycopy(saved.mute, 0, mute, 0, mute.length);
         }
+        if (saved.volume != null && saved.volume.length == volume.length) {
+            System.arraycopy(saved.volume, 0, volume, 0, volume.length);
+        }
         if (saved.instruments.length == instruments.length) {
             System.arraycopy(saved.instruments, 0, instruments, 0, instruments.length);
         }
         if (saved.trackOctaveShift != null && saved.trackOctaveShift.length == trackOctaveShift.length) {
             System.arraycopy(saved.trackOctaveShift, 0, trackOctaveShift, 0, trackOctaveShift.length);
-        }
-        if (saved.mute.length == mute.length) {
-            System.arraycopy(saved.mute, 0, mute, 0, mute.length);
         }
         if (saved.useColors && saved.noteColors != null) {
             noteColors = saved.noteColors;
@@ -381,6 +402,8 @@ public class MidiOptions implements Serializable {
         System.arraycopy(tracks, 0, options.tracks, 0, tracks.length);
         options.mute = new boolean[mute.length];
         System.arraycopy(mute, 0, options.mute, 0, mute.length);
+        options.volume = new int[volume.length];
+        System.arraycopy(volume, 0, options.volume, 0, volume.length);
         options.instruments = new int[instruments.length];
         System.arraycopy(instruments, 0, options.instruments, 0, instruments.length);
         options.trackOctaveShift = new int[trackOctaveShift.length];
