@@ -237,6 +237,8 @@ Improvements introduced in this fork include:
 - Keyboard shortcuts for all major playback actions.
 - Bass clef and treble clef filter buttons (replacing the generic L/R labels) for clearer left/right hand selection.
 - Portrait mode support: the app previously locked the screen to landscape; it now works in both orientations.
+- Per track volume sliders, good for lowering the volume of backing tracks while keeping the track you want to play at full volume
+- Track labels, useful when many tracks are shown
 
 ---
 
