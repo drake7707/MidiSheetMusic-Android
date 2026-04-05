@@ -583,8 +583,19 @@ public class MidiPlayer extends LinearLayout {
             options.pauseTime = (int)(currentPulseTime - options.shifttime);
         }
         else if (playstate == paused) {
-            startPulseTime = currentPulseTime;
-            options.pauseTime = (int)(currentPulseTime - options.shifttime);
+            TimeSignature timesig = (options.time != null) ? options.time : midifile.getTime();
+            int countInPulses = options.countInMeasures * timesig.getMeasure();
+            if (options.countInMeasures > 0 && currentPulseTime <= options.shifttime) {
+                /* At-start resume (e.g. after Rewind): treat like a fresh start so the
+                 * count-in delay and cursor offset are applied consistently. */
+                options.pauseTime = 0;
+                startPulseTime   = options.shifttime - countInPulses;
+                currentPulseTime = options.shifttime - countInPulses;
+                prevPulseTime    = options.shifttime - countInPulses - midifile.getTime().getQuarter();
+            } else {
+                startPulseTime = currentPulseTime;
+                options.pauseTime = (int)(currentPulseTime - options.shifttime);
+            }
         }
         else {
             options.pauseTime = 0;
