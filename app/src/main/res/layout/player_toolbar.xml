@@ -69,19 +69,19 @@
         android:layout_width="60dp"
         android:textSize="14sp" />
 
-    <Button
+    <ImageButton
         android:id="@+id/btn_left"
         style="@style/ToolbarButtonStyle"
-        android:text="L"
-        android:textColor="@color/IconColor"
-        android:textSize="14sp" />
+        android:src="@drawable/bass"
+        android:tint="@color/IconColor"
+        android:contentDescription="@string/bass_clef" />
 
-    <Button
+    <ImageButton
         android:id="@+id/btn_right"
         style="@style/ToolbarButtonStyle"
-        android:text="R"
-        android:textColor="@color/IconColor"
-        android:textSize="14sp" />
+        android:src="@drawable/treble"
+        android:tint="@color/IconColor"
+        android:contentDescription="@string/treble_clef" />
 
     <ImageButton
         android:id="@+id/btn_piano"
