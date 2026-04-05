@@ -2,16 +2,19 @@
 <resources>
 
     <!-- Base style for sheet music player (fullscreen, landscape).
-         Must use android: theme — SheetMusicActivity extends a non-AppCompat base
-         class from the USB MIDI driver library. -->
-    <style name="PlayerTheme" parent="android:Theme.Material.NoActionBar">
+         SheetMusicActivity extends a non-AppCompat base class from the USB MIDI driver
+         library, but Theme.AppCompat works fine on plain android.app.Activity.
+         It is required here so that AppCompat widgets (SwitchCompat etc.) in the
+         settings drawer inflate without the "can only be used with a Theme.AppCompat
+         theme" crash. -->
+    <style name="PlayerTheme" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
-        <item name="android:colorAccent">@color/accent</item>
-        <item name="android:colorPrimary">@color/primary</item>
-        <item name="android:colorPrimaryDark">@color/primaryDark</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primaryDark</item>
     </style>
 
     <!-- App-wide theme for all other activities (AppCompatActivity subclasses) -->
