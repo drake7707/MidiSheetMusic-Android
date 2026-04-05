@@ -8,11 +8,11 @@ MidiSheetMusic is a free and open-source Android app that helps you learn and pr
 
 <img width="512" height="1080" alt="image" src="https://github.com/user-attachments/assets/5f4ac9d9-677f-44ef-9fec-205f7e15b557" />
 <br>
-<img width="512" height="1080" alt="image" src="https://github.com/user-attachments/assets/c3b13767-cc7c-4062-9aa3-5044a4954097" />
+<img width="512" height="1080" alt="image" src="https://github.com/user-attachments/assets/4abc4cae-026e-4d08-9eb1-269993f8e15e" />
 <br>
 <img width="512" height="1080" alt="image" src="https://github.com/user-attachments/assets/8617fece-7074-4226-b112-e09f575215eb" />
 <br>
-<img width="512" height="1080" alt="image" src="https://github.com/user-attachments/assets/22f99bc9-4753-4bac-94f8-bebb6c97e282" />
+<img width="512" height="1080" alt="image" src="https://github.com/user-attachments/assets/c3b13767-cc7c-4062-9aa3-5044a4954097" />
 <br>
 <img width="512" height="1080" alt="image" src="https://github.com/user-attachments/assets/3aac4036-c3fe-417d-a2a1-dbe305281273" />
 
