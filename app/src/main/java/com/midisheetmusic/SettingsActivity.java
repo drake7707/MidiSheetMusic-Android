@@ -124,9 +124,7 @@ public class SettingsActivity extends AppCompatActivity {
         private MidiOptions options;         /** The option values */
 
         private Preference restoreDefaults;           /** Restore default settings */
-        private SwitchPreferenceCompat[] selectTracks;    /** Which tracks to display */
-        private SwitchPreferenceCompat[] playTracks;      /** Which tracks to play */
-        private ListPreference[] selectInstruments;   /** Instruments to use per track */
+        private TrackRowPreference[] trackOptions;    /** Combined track options rows */
         private Preference setAllToPiano;             /** Set all instruments to piano */
         private SwitchPreferenceCompat showLyrics;        /** Show the lyrics */
         private SwitchPreferenceCompat twoStaffs;         /** Combine tracks into two staffs */
@@ -164,9 +162,7 @@ public class SettingsActivity extends AppCompatActivity {
         private void createView() {
             PreferenceScreen root = getPreferenceManager().createPreferenceScreen(context);
             createRestoreDefaultPrefs(root);
-            createDisplayTrackPrefs(root);
-            createPlayTrackPrefs(root);
-            createInstrumentPrefs(root);
+            createTrackOptionsPrefs(root);
 
             PreferenceCategory sheetTitle = new PreferenceCategory(context);
             sheetTitle.setTitle(R.string.sheet_prefs_title);
@@ -215,54 +211,28 @@ public class SettingsActivity extends AppCompatActivity {
         }
 
 
-        /** Create the "Select Tracks to Display" checkboxes. */
-        private void createDisplayTrackPrefs(PreferenceScreen root) {
-            PreferenceCategory displayTracksTitle = new PreferenceCategory(context);
-            displayTracksTitle.setTitle(R.string.select_tracks_to_display);
-            root.addPreference(displayTracksTitle);
-            selectTracks = new SwitchPreferenceCompat[options.tracks.length];
+        /** Create the combined "Track Options" section with one row per track. */
+        private void createTrackOptionsPrefs(PreferenceScreen root) {
+            PreferenceCategory trackOptionsTitle = new PreferenceCategory(context);
+            trackOptionsTitle.setTitle(R.string.track_options);
+            root.addPreference(trackOptionsTitle);
+
+            trackOptions = new TrackRowPreference[options.tracks.length];
             for (int i = 0; i < options.tracks.length; i++) {
-                selectTracks[i] = new SwitchPreferenceCompat(context);
-                selectTracks[i].setTitle("Track " + i);
-                selectTracks[i].setChecked(options.tracks[i]);
-                root.addPreference(selectTracks[i]);
+                trackOptions[i] = new TrackRowPreference(
+                        context, i,
+                        options.tracks[i],
+                        options.mute[i],
+                        options.instruments[i],
+                        options.trackOctaveShift[i]);
+                root.addPreference(trackOptions[i]);
             }
-        }
 
-        /** Create the "Select Tracks to Play" checkboxes. */
-        private void createPlayTrackPrefs(PreferenceScreen root) {
-            PreferenceCategory playTracksTitle = new PreferenceCategory(context);
-            playTracksTitle.setTitle(R.string.select_tracks_to_play);
-            root.addPreference(playTracksTitle);
-            playTracks = new SwitchPreferenceCompat[options.mute.length];
-            for (int i = 0; i < options.mute.length; i++) {
-                playTracks[i] = new SwitchPreferenceCompat(context);
-                playTracks[i].setTitle("Track " + i);
-                playTracks[i].setChecked(!options.mute[i]);
-                root.addPreference(playTracks[i]);
-            }
-        }
+            /* "Set All to Piano" sits below a category separator to visually separate
+             * it as a bulk action for all tracks in this section. */
+            PreferenceCategory allTracksActions = new PreferenceCategory(context);
+            root.addPreference(allTracksActions);
 
-
-        /** Create the "Select Instruments For Each Track " lists.
-         *  The list of possible instruments is in MidiFile.java.
-         */
-        private void createInstrumentPrefs(PreferenceScreen root) {
-            PreferenceCategory selectInstrTitle = new PreferenceCategory(context);
-            selectInstrTitle.setTitle(R.string.select_instruments_per_track);
-            root.addPreference(selectInstrTitle);
-            selectInstruments = new ListPreference[options.tracks.length];
-            for (int i = 0; i < options.instruments.length; i++) {
-                selectInstruments[i] = new ListPreference(context);
-                selectInstruments[i].setOnPreferenceChangeListener(this);
-                selectInstruments[i].setEntries(MidiFile.Instruments);
-                selectInstruments[i].setKey("select_instruments_" + i);
-                selectInstruments[i].setEntryValues(MidiFile.Instruments);
-                selectInstruments[i].setTitle("Track " + i);
-                selectInstruments[i].setValueIndex(options.instruments[i]);
-                selectInstruments[i].setSummary( selectInstruments[i].getEntry() );
-                root.addPreference(selectInstruments[i]);
-            }
             setAllToPiano = new Preference(context);
             setAllToPiano.setTitle(R.string.set_all_to_piano);
             setAllToPiano.setOnPreferenceClickListener(this);
@@ -495,18 +465,14 @@ public class SettingsActivity extends AppCompatActivity {
 
         /** Update the MidiOptions based on the preferences selected. */
         private void updateOptions() {
-            for (int i = 0; i < options.tracks.length; i++) {
-                options.tracks[i] = selectTracks[i].isChecked();
-            }
-            for (int i = 0; i < options.mute.length; i++) {
-                options.mute[i] = !playTracks[i].isChecked();
+            for (int i = 0; i < trackOptions.length; i++) {
+                options.tracks[i] = trackOptions[i].isTrackVisible();
+                options.mute[i] = trackOptions[i].isTrackMuted();
+                options.instruments[i] = trackOptions[i].getInstrumentIndex();
+                options.trackOctaveShift[i] = trackOptions[i].getOctaveShift();
             }
             for (int i = 0; i < options.noteColors.length; i++) {
                 options.noteColors[i] = noteColors[i].getColor();
-            }
-            for (int i = 0; i < options.tracks.length; i++) {
-                ListPreference entry = selectInstruments[i];
-                options.instruments[i] = entry.findIndexOfValue(entry.getValue());
             }
             options.showLyrics = showLyrics.isChecked();
             if (twoStaffs != null)
