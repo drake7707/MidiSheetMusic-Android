@@ -434,6 +434,15 @@ public class SheetMusicActivity extends MidiHandlingActivity {
         super.onPause();
     }
 
+    /** Release resources when the activity is destroyed to prevent MediaPlayer leaks */
+    @Override
+    protected void onDestroy() {
+        if (player != null) {
+            player.cleanup();
+        }
+        super.onDestroy();
+    }
+
     @Override
     void OnMidiDeviceStatus(boolean connected) {
         player.OnMidiDeviceStatus(connected);
