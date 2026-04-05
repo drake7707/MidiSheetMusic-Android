@@ -135,7 +135,7 @@ public class SettingsActivity extends AppCompatActivity {
         private ListPreference key;                   /** Key Signature to use */
         private ListPreference time;                  /** Time Signature to use */
         private ListPreference combineInterval;       /** Interval (msec) to combine notes */
-        private ListPreference delayStartInterval;    /** Delay before playing */
+        private ListPreference countInMeasures;       /** Count-in measures before playing */
 
         private ColorPreference[] noteColors;
         private SwitchPreferenceCompat useColors;
@@ -179,7 +179,7 @@ public class SettingsActivity extends AppCompatActivity {
             createKeySignaturePrefs(root);
             createTimeSignaturePrefs(root);
             createCombineIntervalPrefs(root);
-            createDelayStartIntervalPrefs(root);
+            createCountInMeasuresPrefs(root);
             createColorPrefs(root);
             applyNoIconSpace(root);
             setPreferenceScreen(root);
@@ -374,28 +374,30 @@ public class SettingsActivity extends AppCompatActivity {
             root.addPreference(combineInterval);
         }
 
-        /** Create the "Delay before start"  preference
-         * SetSummary is not to be used as The default mechanism will force the value but not the summary
-         * Therefore using call back to calculate the summary
+        /** Create the "Count-in measures" preference.
+         *  Plays N measures of beat clicks before playback starts.
          */
-        private void createDelayStartIntervalPrefs(PreferenceScreen root) {
-            int selected = options.delayStartInterval;
-            delayStartInterval = new ListPreference(context);
-            delayStartInterval.setKey("DelayToStart");
-            delayStartInterval.setOnPreferenceChangeListener((preference, isChecked) -> {
-                        options.delayStartInterval = Integer.parseInt((String)isChecked);
-                        delayStartInterval.setValueIndex(options.delayStartInterval / 1000);
-
-                        return true;});
-            delayStartInterval.setSummaryProvider((preference) -> {
-                return (Integer.parseInt(((ListPreference)preference).getValue()) / 1000) + " second(s)" ;
+        private void createCountInMeasuresPrefs(PreferenceScreen root) {
+            countInMeasures = new ListPreference(context);
+            countInMeasures.setKey("CountInMeasures");
+            countInMeasures.setOnPreferenceChangeListener((preference, newValue) -> {
+                options.countInMeasures = Integer.parseInt((String) newValue);
+                countInMeasures.setValueIndex(options.countInMeasures);
+                return true;
             });
-
-            delayStartInterval.setTitle(R.string.delay_start_interval);
-            delayStartInterval.setEntries(R.array.delay_start_interval_entries);
-            delayStartInterval.setEntryValues(R.array.delay_start_interval_values);
-            delayStartInterval.setValueIndex(selected / 1000);
-            root.addPreference(delayStartInterval);
+            countInMeasures.setSummaryProvider((preference) -> {
+                int val = Integer.parseInt(((ListPreference) preference).getValue());
+                return val == 0
+                        ? context.getString(R.string.count_in_measures_none)
+                        : context.getResources().getQuantityString(
+                                R.plurals.count_in_measures_summary, val, val);
+            });
+            countInMeasures.setTitle(R.string.count_in_measures);
+            countInMeasures.setEntries(R.array.count_in_measures_entries);
+            countInMeasures.setEntryValues(R.array.count_in_measures_values);
+            countInMeasures.setPersistent(false);
+            countInMeasures.setValueIndex(options.countInMeasures);
+            root.addPreference(countInMeasures);
         }
 
 
@@ -515,7 +517,7 @@ public class SettingsActivity extends AppCompatActivity {
                     break;
             }
             options.combineInterval = Integer.parseInt(combineInterval.getValue());
-            options.delayStartInterval = Integer.parseInt(delayStartInterval.getValue());
+            options.countInMeasures = Integer.parseInt(countInMeasures.getValue());
             options.shade1Color = shade1Color.getColor();
             options.shade2Color = shade2Color.getColor();
             options.useColors = useColors.isChecked();

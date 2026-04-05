@@ -96,12 +96,20 @@
         <item>100 milliseconds</item>
     </string-array>
 
-    <string-array name="delay_start_interval_entries">
-        <item>0 second</item>
-        <item>1 seconds</item>
-        <item>2 seconds</item>
-        <item>3 seconds</item>
-        <item>4 seconds</item>
+    <string-array name="count_in_measures_entries">
+        <item>None</item>
+        <item>1 measure</item>
+        <item>2 measures</item>
+        <item>3 measures</item>
+        <item>4 measures</item>
+    </string-array>
+
+    <string-array name="count_in_measures_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
     </string-array>
 
     <string-array name="combine_interval_values">
@@ -110,14 +118,6 @@
         <item>60</item>
         <item>80</item>
         <item>100</item>
-    </string-array>
-
-    <string-array name="delay_start_interval_values">
-        <item>0</item>
-        <item>1000</item>
-        <item>2000</item>
-        <item>3000</item>
-        <item>4000</item>
     </string-array>
 
     <string-array name="show_note_letter_entries">
