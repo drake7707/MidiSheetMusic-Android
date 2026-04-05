@@ -299,7 +299,6 @@ public class MidiPlayer extends LinearLayout {
     private void toggleTrack(int track) {
         if (track < options.tracks.length) {
             options.tracks[track] = !options.tracks[track];
-            options.mute[track] = !options.tracks[track];
             if (mSheetUpdateRequestListener != null) {
                 mSheetUpdateRequestListener.onSheetUpdateRequest();
             }
@@ -418,8 +417,8 @@ public class MidiPlayer extends LinearLayout {
      */
     private int numberTracks() {
         int count = 0;
-        for (int i = 0; i < options.tracks.length; i++) {
-            if (options.tracks[i] && !options.mute[i]) {
+        for (int i = 0; i < options.mute.length; i++) {
+            if (!options.mute[i]) {
                 count += 1;
             }
         }

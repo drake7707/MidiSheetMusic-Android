@@ -1020,7 +1020,7 @@ public class MidiFile {
             MidiTrack track = tracks.get(tracknum);
             int realtrack = track.trackNumber();
             instruments[realtrack] = options.instruments[tracknum];
-            if (!options.tracks[tracknum] || options.mute[tracknum]) {
+            if (options.mute[tracknum]) {
                 keeptracks[realtrack] = false;
             }
             if (options.volume != null && tracknum < options.volume.length) {
@@ -1110,7 +1110,7 @@ public class MidiFile {
             MidiTrack track = tracks.get(tracknum);
             int channel = track.getNotes().get(0).getChannel();
             instruments[channel] = options.instruments[tracknum];
-            if (!options.tracks[tracknum] || options.mute[tracknum]) {
+            if (options.mute[tracknum]) {
                 keepchannel[channel] = false;
             }
             if (options.volume != null && tracknum < options.volume.length) {

@@ -13,7 +13,6 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.LinearLayout;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.preference.Preference;
@@ -93,7 +92,6 @@ public class TrackRowPreference extends Preference {
         Button btnOctaveShift = (Button) holder.findViewById(R.id.btn_octave_shift);
         SeekBar seekVolume = (SeekBar) holder.findViewById(R.id.seek_volume);
         TextView txtVolume = (TextView) holder.findViewById(R.id.txt_volume);
-        LinearLayout volumeRow = (LinearLayout) holder.findViewById(R.id.volume_row);
 
         // Track title and current instrument subtitle
         titleView.setText(getContext().getString(R.string.track_number, trackIndex));
