@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="@dimen/toolbar_height"
+    android:gravity="center_vertical"
     android:orientation="horizontal">
 
     <ImageButton
@@ -45,8 +46,10 @@
     <TextView
         android:id="@+id/txt_speed"
         android:layout_width="wrap_content"
-        android:layout_height="@dimen/toolbar_height"
+        android:layout_height="wrap_content"
         android:fontFamily="monospace"
+        android:gravity="center"
+        android:lines="2"
         android:padding="4dp"
         android:text="100%"
         tools:text="100%" />
@@ -72,15 +75,13 @@
     <ImageButton
         android:id="@+id/btn_left"
         style="@style/ToolbarButtonStyle"
-        android:src="@drawable/bass"
-        android:tint="@color/IconColor"
+        android:src="@drawable/ic_bass_clef"
         android:contentDescription="@string/bass_clef" />
 
     <ImageButton
         android:id="@+id/btn_right"
         style="@style/ToolbarButtonStyle"
-        android:src="@drawable/treble"
-        android:tint="@color/IconColor"
+        android:src="@drawable/ic_treble_clef"
         android:contentDescription="@string/treble_clef" />
 
     <ImageButton

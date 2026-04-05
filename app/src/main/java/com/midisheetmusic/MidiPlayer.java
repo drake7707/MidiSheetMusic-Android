@@ -271,7 +271,7 @@ public class MidiPlayer extends LinearLayout {
         String text = String.format(Locale.US, "%3d%%", progress);
         if (midifile != null) {
             int bpm = Math.round(MICROSECONDS_PER_MINUTE * progress / (midifile.getTime().getTempo() * 100.0f));
-            text += " " + bpm + "bpm";
+            text += "\n" + bpm + "bpm";
         }
         speedText.setText(text);
     }
@@ -358,15 +358,13 @@ public class MidiPlayer extends LinearLayout {
     }
 
     /** Determine the measured width and height.
-     *  Resize the individual buttons according to the new width/height.
+     *  Use a fixed toolbar height (from dimens) so portrait and landscape are consistent.
      */
     @Override
     protected void onMeasure(int widthspec, int heightspec) {
         super.onMeasure(widthspec, heightspec);
         int screenwidth = MeasureSpec.getSize(widthspec);
-        /* Make the button height 2/3 the piano WhiteKeyHeight */
-        int height = (int) (5.0 * screenwidth / ( 2 + Piano.KeysPerOctave * Piano.MaxOctave));
-        height = height * 2/3;
+        int height = (int) getResources().getDimension(R.dimen.toolbar_height);
         setMeasuredDimension(screenwidth, height);
     }
 
