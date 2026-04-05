@@ -35,7 +35,7 @@
         android:textColor="#f0f0f0" />
 
     <ListView
-        android:id="@android:id/list"
+        android:id="@+id/list_view"
         android:background="#000000"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content" />

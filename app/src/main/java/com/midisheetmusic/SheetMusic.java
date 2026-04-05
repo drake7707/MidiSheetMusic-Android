@@ -120,9 +120,10 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
         holder.addCallback(this);
         bufferX = bufferY = scrollX = scrollY = 0;
         
-        Activity activity = (Activity)context;
-        screenwidth = activity.getWindowManager().getDefaultDisplay().getWidth();
-        screenheight = activity.getWindowManager().getDefaultDisplay().getHeight();
+        Activity activity = (Activity) context;
+        Rect bounds = activity.getWindowManager().getCurrentWindowMetrics().getBounds();
+        screenwidth = bounds.width();
+        screenheight = bounds.height();
 
         // Size could've been captured while the screen was still in portrait.
         // In this case, swap the dimensions.
@@ -1496,6 +1497,17 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
     /** Surface has been destroyed */
     public void surfaceDestroyed(SurfaceHolder holder) {
         surfaceReady = false;
+    }
+
+    /** Unregister the SurfaceHolder callback before this view is removed from
+     *  its parent. Avoids the "disconnect: not connected" BufferQueueProducer
+     *  error that occurs when the surface is already gone by the time the
+     *  system tries to disconnect it a second time.
+     *  Safe to call multiple times.
+     */
+    public void cleanup() {
+        SurfaceHolder holder = getHolder();
+        holder.removeCallback(this);
     }
 
     public MusicSymbol getCurrentNote(int currentTime) {

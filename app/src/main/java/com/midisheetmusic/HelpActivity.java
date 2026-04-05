@@ -12,14 +12,15 @@
 
 package com.midisheetmusic;
 
-import android.app.Activity;
 import android.os.Bundle;
-import android.webkit.*;
+import android.webkit.WebView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 /** @class HelpActivity
  *  The HelpActivity displays the help.html file in the assets directory.
  */
-public class HelpActivity extends Activity {
+public class HelpActivity extends AppCompatActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

@@ -13,15 +13,24 @@
 
 package com.midisheetmusic;
 
-import android.app.*;
-import android.content.*;
-import android.os.*;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
 import android.view.MenuItem;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.IntentCompat;
+import androidx.core.os.BundleCompat;
 import androidx.fragment.app.Fragment;
-import androidx.preference.*;
+import androidx.preference.ListPreference;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceCategory;
+import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceScreen;
+import androidx.preference.SwitchPreferenceCompat;
 
 /**
  * This activity is created by the "Settings" menu option.
@@ -58,8 +67,13 @@ public class SettingsActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.settings_activity);
-        options = (MidiOptions) getIntent().getSerializableExtra(settingsID);
-        defaultOptions = (MidiOptions) getIntent().getSerializableExtra(defaultSettingsID);
+
+        // Use the explicit Toolbar defined in the layout (AppTheme has no ActionBar)
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        options = IntentCompat.getSerializableExtra(getIntent(), settingsID, MidiOptions.class);
+        defaultOptions = IntentCompat.getSerializableExtra(getIntent(), defaultSettingsID, MidiOptions.class);
 
         // Pass options to the fragment
         Fragment settingsFragment = new SettingsFragment();
@@ -76,33 +90,31 @@ public class SettingsActivity extends AppCompatActivity {
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
+
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                SettingsFragment settingsFragment = (SettingsFragment)
+                        getSupportFragmentManager().findFragmentById(R.id.settings);
+                if (settingsFragment != null) {
+                    settingsFragment.updateOptions();
+                }
+                Intent intent = new Intent();
+                intent.putExtra(SettingsActivity.settingsID, options);
+                setResult(Activity.RESULT_OK, intent);
+                setEnabled(false);
+                getOnBackPressedDispatcher().onBackPressed();
+            }
+        });
     }
 
     /** Handle 'Up' button press */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
-            onBackPressed();
+            getOnBackPressedDispatcher().onBackPressed();
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    /** When the back button is pressed, update the MidiOptions.
-     *  Return the updated options as the 'result' of this Activity.
-     */
-    @Override
-    public void onBackPressed() {
-        // Make sure `options` is updated with the changes
-        SettingsFragment settingsFragment = (SettingsFragment)getSupportFragmentManager()
-                .findFragmentById(R.id.settings);
-        if (settingsFragment != null) {
-            settingsFragment.updateOptions();
-        }
-
-        Intent intent = new Intent();
-        intent.putExtra(SettingsActivity.settingsID, options);
-        setResult(Activity.RESULT_OK, intent);
-        super.onBackPressed();
     }
 
     public static class SettingsFragment extends PreferenceFragmentCompat
@@ -139,8 +151,10 @@ public class SettingsActivity extends AppCompatActivity {
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             if (getArguments() != null) {
-                options = (MidiOptions) getArguments().getSerializable(SettingsActivity.settingsID);
-                defaultOptions = (MidiOptions) getArguments().getSerializable(SettingsActivity.defaultSettingsID);
+                options = BundleCompat.getSerializable(
+                        getArguments(), SettingsActivity.settingsID, MidiOptions.class);
+                defaultOptions = BundleCompat.getSerializable(
+                        getArguments(), SettingsActivity.defaultSettingsID, MidiOptions.class);
             }
             context = getPreferenceManager().getContext();
             createView();
@@ -402,7 +416,7 @@ public class SettingsActivity extends AppCompatActivity {
 
                         return true;});
             delayStartInterval.setSummaryProvider((preference) -> {
-                return (Integer.parseInt((String)((ListPreference)preference).getValue()) / 1000) + " second(s)" ;
+                return (Integer.parseInt(((ListPreference)preference).getValue()) / 1000) + " second(s)" ;
             });
 
             delayStartInterval.setTitle(R.string.delay_start_interval);
@@ -439,7 +453,7 @@ public class SettingsActivity extends AppCompatActivity {
 
                 boolean isuseColorChecked = useColors.isChecked();
                 for (ColorPreference noteColorPref : noteColors) {
-                    noteColorPref.setVisible((boolean)isuseColorChecked);
+                    noteColorPref.setVisible(isuseColorChecked);
                 }
 
                 return true;

@@ -14,6 +14,7 @@ package com.midisheetmusic;
 
 import android.graphics.*;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.*;
 import android.view.animation.AnimationUtils;
@@ -52,7 +53,7 @@ public class ScrollAnimation {
     public ScrollAnimation(ScrollAnimationListener listener, boolean scrollVert) {
         this.listener = listener;
         this.scrollVert = scrollVert;
-        scrollTimer = new Handler();
+        scrollTimer = new Handler(Looper.getMainLooper());
     }
 
     /* Motion has stopped */

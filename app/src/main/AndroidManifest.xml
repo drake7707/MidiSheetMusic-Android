@@ -1,56 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.midisheetmusic"
-    android:versionCode="9"
-    android:versionName="2.6">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- For reading MIDI files on Android 11–12 (API 30–32) -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <!-- For reading audio files on Android 13+ (API 33+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <!-- USB MIDI device access -->
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
 
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
+
         <activity
             android:name=".SplashActivity"
+            android:exported="true"
             android:theme="@style/SplashTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ChooseSongActivity" />
-        <activity android:name=".FileBrowserActivity" />
-        <activity android:name=".AllSongsActivity" />
-        <activity android:name=".RecentSongsActivity" />
+
+        <activity
+            android:name=".ChooseSongActivity"
+            android:exported="false" />
+
         <activity
             android:name=".SettingsActivity"
+            android:exported="false"
             android:label="@string/title_activity_settings"
-            android:theme="@style/Theme.AppCompat">
-            <intent-filter>
-                <action android:name="android.intent.action.SETTINGS" />
+            android:theme="@style/SettingsTheme" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity android:name=".HelpActivity" />
+        <activity
+            android:name=".HelpActivity"
+            android:exported="false" />
+
         <activity
             android:name=".SheetMusicActivity"
-            android:configChanges="orientation"
-            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize"
+            android:exported="true"
             android:theme="@style/PlayerTheme">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
-
-                <data
-                    android:host="*"
-                    android:mimeType="*/*"
-                    android:pathPattern=".*\\.mid"
-                    android:scheme="file" />
+                <data android:mimeType="audio/midi" />
+                <data android:mimeType="audio/x-midi" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:mimeType="*/*" android:pathPattern=".*\\.mid" />
+                <data android:scheme="content" android:mimeType="*/*" android:pathPattern=".*\\.midi" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/fileprovider_paths" />
+        </provider>
+
     </application>
 
 </manifest>

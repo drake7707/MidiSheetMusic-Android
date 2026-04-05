@@ -18,7 +18,7 @@
         android:textColor="@android:color/white"
         android:imeOptions="flagNoExtractUi"/>
 
-    <ListView android:id="@android:id/list"
+    <ListView android:id="@+id/list_view"
         android:background="#000000"
         android:layout_width="match_parent"
         android:layout_height="0dip"

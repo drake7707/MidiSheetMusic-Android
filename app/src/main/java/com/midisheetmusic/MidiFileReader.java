@@ -98,7 +98,7 @@ public class MidiFileReader {
         checkRead(amount);
         byte[] result = new byte[amount];
         for (int i = 0; i < amount; i++) {
-            result[i] = (byte)(data[i + parse_offset]);
+            result[i] = data[i + parse_offset];
         }
         parse_offset += amount;
         return result;
@@ -142,18 +142,18 @@ public class MidiFileReader {
         byte b;
 
         b = ReadByte();
-        result = (int)(b & 0x7f);
+        result = b & 0x7f;
 
         for (int i = 0; i < 3; i++) {
             if ((b & 0x80) != 0) {
                 b = ReadByte();
-                result = (int)( (result << 7) + (b & 0x7f) );
+                result = (result << 7) + (b & 0x7f);
             }
             else {
                 break;
             }
         }
-        return (int)result;
+        return result;
     }
 
     /** Skip over the given number of bytes */ 
