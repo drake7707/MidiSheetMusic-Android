@@ -108,7 +108,12 @@ public class MidiOptions implements Serializable {
         showTrackLabels = false;
         trackInstrumentNames = new String[num_tracks];
         for (int i = 0; i < num_tracks; i++) {
-            trackInstrumentNames[i] = midifile.getTracks().get(i).getInstrumentName();
+            int instr = midifile.getTracks().get(i).getInstrument();
+            if (instr >= 0 && instr < MidiFile.InstrumentAbbreviations.length) {
+                trackInstrumentNames[i] = MidiFile.InstrumentAbbreviations[instr];
+            } else {
+                trackInstrumentNames[i] = "";
+            }
         }
         shifttime = 0;
         transpose = 0;

@@ -771,7 +771,7 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
     private ArrayList<Staff> 
     CreateStaffsForTrack(ArrayList<MusicSymbol> symbols, int measurelen, 
                          KeySignature key, MidiOptions options,
-                         int track, int totaltracks) {
+                         int track, int totaltracks, int originalTrackNum) {
         int keysigWidth = KeySignatureWidth(key);
         int startindex = 0;
         ArrayList<Staff> thestaffs = new ArrayList<>(symbols.size() / 50);
@@ -837,7 +837,7 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
             for (int i = startindex; i <= endindex; i++) {
                 staffSymbols.add(symbols.get(i));
             }
-            Staff staff = new Staff(staffSymbols, key, options, track, totaltracks);
+            Staff staff = new Staff(staffSymbols, key, options, track, totaltracks, originalTrackNum);
             thestaffs.add(staff);
             startindex = endindex + 1;
         }
@@ -870,10 +870,33 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
         ArrayList<ArrayList<Staff>> trackstaffs = new ArrayList<>(allsymbols.size());
         int totaltracks = allsymbols.size();
 
+        /* Build mapping from filtered track index to original (unfiltered) track number.
+         * When twoStaffs is true the tracks have been combined and the original indices
+         * no longer map 1-to-1, so we pass -1 to suppress the label in that case. */
+        int[] originalTrackNums = new int[totaltracks];
+        if (options.twoStaffs || options.tracks == null) {
+            for (int i = 0; i < totaltracks; i++) {
+                originalTrackNums[i] = -1;
+            }
+        } else {
+            int filteredIdx = 0;
+            for (int origIdx = 0; origIdx < options.tracks.length && filteredIdx < totaltracks; origIdx++) {
+                if (options.tracks[origIdx]) {
+                    originalTrackNums[filteredIdx++] = origIdx;
+                }
+            }
+            /* If we couldn't fill every slot (e.g. options.tracks is shorter than
+             * allsymbols), mark the remainder as unknown. */
+            while (filteredIdx < totaltracks) {
+                originalTrackNums[filteredIdx++] = -1;
+            }
+        }
+
         for (int track = 0; track < totaltracks; track++) {
             ArrayList<MusicSymbol> symbols = allsymbols.get( track );
             trackstaffs.add(CreateStaffsForTrack(symbols, measurelen, key, 
-                                                 options, track, totaltracks));
+                                                 options, track, totaltracks,
+                                                 originalTrackNums[track]));
         }
 
         /* Update the EndTime of each Staff. EndTime is used for playback */

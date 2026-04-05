@@ -61,9 +61,11 @@ public class Staff {
      * to determine whether to join this left/right vertical sides
      * with the staffs above and below. The MidiOptions are used
      * to check whether to display measure numbers or not.
+     * The originalTrackNum is the index into the original (unfiltered) MIDI
+     * track list, used to look up the correct instrument name for the label.
      */
     public Staff(ArrayList<MusicSymbol> symbols, KeySignature key,
-                 MidiOptions options, int tracknum, int totaltracks)  {
+                 MidiOptions options, int tracknum, int totaltracks, int originalTrackNum)  {
 
         keysigWidth = SheetMusic.KeySignatureWidth(key);
         this.tracknum = tracknum;
@@ -71,12 +73,9 @@ public class Staff {
         showMeasures = (options.showMeasures && tracknum == 0);
         showTrackLabels = options.showTrackLabels;
         if (showTrackLabels && options.trackInstrumentNames != null &&
-                tracknum >= 0 && tracknum < options.trackInstrumentNames.length) {
-            String instrName = options.trackInstrumentNames[tracknum];
-            if (instrName != null && instrName.length() > 8) {
-                instrName = instrName.substring(0, 8);
-            }
-            trackLabel = tracknum + ": " + (instrName != null ? instrName : "");
+                originalTrackNum >= 0 && originalTrackNum < options.trackInstrumentNames.length) {
+            String instrAbbrev = options.trackInstrumentNames[originalTrackNum];
+            trackLabel = originalTrackNum + ": " + (instrAbbrev != null ? instrAbbrev : "");
         } else {
             trackLabel = null;
         }
