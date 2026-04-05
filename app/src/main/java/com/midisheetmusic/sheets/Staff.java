@@ -71,7 +71,7 @@ public class Staff {
         showMeasures = (options.showMeasures && tracknum == 0);
         showTrackLabels = options.showTrackLabels;
         if (showTrackLabels && options.trackInstrumentNames != null &&
-                tracknum < options.trackInstrumentNames.length) {
+                tracknum >= 0 && tracknum < options.trackInstrumentNames.length) {
             String instrName = options.trackInstrumentNames[tracknum];
             if (instrName != null && instrName.length() > 8) {
                 instrName = instrName.substring(0, 8);
@@ -293,7 +293,7 @@ public class Staff {
         float savedTextSize = paint.getTextSize();
         paint.setTextSize(savedTextSize * 0.75f);
         int ypos = ytop - SheetMusic.NoteHeight;
-        canvas.drawText(trackLabel, SheetMusic.LeftMargin + 2, ypos, paint);
+        canvas.drawText(trackLabel, SheetMusic.LeftMargin + 2 /* small inset from margin */, ypos, paint);
         paint.setTextSize(savedTextSize);
     }
 
