@@ -29,6 +29,7 @@ import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceGroup;
 import androidx.preference.PreferenceScreen;
 import androidx.preference.SwitchPreferenceCompat;
 
@@ -180,6 +181,7 @@ public class SettingsActivity extends AppCompatActivity {
             createCombineIntervalPrefs(root);
             createDelayStartIntervalPrefs(root);
             createColorPrefs(root);
+            applyNoIconSpace(root);
             setPreferenceScreen(root);
         }
 
@@ -452,6 +454,21 @@ public class SettingsActivity extends AppCompatActivity {
                         {"A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"}[i]);
                 noteColors[i].setVisible(options.useColors);
                 root.addPreference(noteColors[i]);
+            }
+        }
+
+        /**
+         * Remove the icon placeholder reserved space from every preference in the
+         * screen so that all item titles align at the same left margin as the custom
+         * TrackRowPreference rows (which have no icon frame in their layout).
+         */
+        private void applyNoIconSpace(PreferenceGroup group) {
+            for (int i = 0; i < group.getPreferenceCount(); i++) {
+                Preference p = group.getPreference(i);
+                p.setIconSpaceReserved(false);
+                if (p instanceof PreferenceGroup) {
+                    applyNoIconSpace((PreferenceGroup) p);
+                }
             }
         }
 
