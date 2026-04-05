@@ -706,16 +706,19 @@ public class MidiPlayer extends LinearLayout {
      *  boundary rather than skipping past it.
      */
     public void NextNote() {
+        Log.d("NoteNav", "NextNote: called playstate=" + playstate
+                + " currentPulse=" + (int)currentPulseTime);
         if (midifile == null || sheet == null) {
+            Log.d("NoteNav", "NextNote: returning early — no midifile/sheet");
             return;
         }
         if (playstate != paused && playstate != stopped) {
+            Log.d("NoteNav", "NextNote: returning early — wrong playstate=" + playstate);
             return;
         }
 
         MusicSymbol currentNote = sheet.getCurrentNote((int) currentPulseTime);
-        Log.d("NoteNav", "NextNote: currentPulse=" + (int)currentPulseTime
-                + " currentNote=" + (currentNote != null ? currentNote.getStartTime() : "null"));
+        Log.d("NoteNav", "NextNote: currentNote=" + (currentNote != null ? currentNote.getStartTime() : "null"));
         if (currentNote == null) {
             return;
         }
@@ -749,16 +752,19 @@ public class MidiPlayer extends LinearLayout {
      *  The music must be in the paused/stopped state.
      */
     public void PrevNote() {
+        Log.d("NoteNav", "PrevNote: called playstate=" + playstate
+                + " currentPulse=" + (int)currentPulseTime);
         if (midifile == null || sheet == null) {
+            Log.d("NoteNav", "PrevNote: returning early — no midifile/sheet");
             return;
         }
         if (playstate != paused && playstate != stopped) {
+            Log.d("NoteNav", "PrevNote: returning early — wrong playstate=" + playstate);
             return;
         }
 
         MusicSymbol prevNote = sheet.getPrevNote((int) currentPulseTime);
-        Log.d("NoteNav", "PrevNote: currentPulse=" + (int)currentPulseTime
-                + " prevNote=" + (prevNote != null ? prevNote.getStartTime() : "null"));
+        Log.d("NoteNav", "PrevNote: prevNote=" + (prevNote != null ? prevNote.getStartTime() : "null"));
         if (prevNote == null) {
             return;
         }
