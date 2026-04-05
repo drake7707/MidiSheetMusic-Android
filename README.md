@@ -1,4 +1,4 @@
-# MidiSheetMusic for Android - User Manual
+# Extended MidiSheetMusic
 
 [![Build](https://github.com/drake7707/MidiSheetMusic-Android/actions/workflows/build.yml/badge.svg)](https://github.com/drake7707/MidiSheetMusic-Android/actions/workflows/build.yml)
 
@@ -6,11 +6,17 @@ MidiSheetMusic is a free and open-source Android app that helps you learn and pr
 
 <div style="text-align: center">
 
-<img src="images/screenshot_sheet.png" width="500" hspace="20">
+<img width="512" height="1080" alt="image" src="https://github.com/user-attachments/assets/5f4ac9d9-677f-44ef-9fec-205f7e15b557" />
 <br>
-<img src="images/screenshot_song_list.png" width="500" hspace="20">
+<img width="512" height="1080" alt="image" src="https://github.com/user-attachments/assets/dd7f68c1-58e9-43ef-a7f7-e106b278b17b" />
 <br>
-<img src="images/screenshot_settings1.png" height="500" hspace="20"><img src="images/screenshot_settings2.png" height="500" hspace="20">
+<img width="512" height="1080" alt="image" src="https://github.com/user-attachments/assets/8617fece-7074-4226-b112-e09f575215eb" />
+<br>
+<img width="512" height="1080" alt="image" src="https://github.com/user-attachments/assets/22f99bc9-4753-4bac-94f8-bebb6c97e282" />
+<br>
+<img width="512" height="1080" alt="image" src="https://github.com/user-attachments/assets/3aac4036-c3fe-417d-a2a1-dbe305281273" />
+
+
 
 </div>
 
@@ -218,7 +224,7 @@ Source code is available at: https://github.com/drake7707/MidiSheetMusic-Android
 ## Contributors
 
 - **Madhav Vaidyanathan** - Original creator of MidiSheetMusic. The original SourceForge project can be found at https://sourceforge.net/projects/midisheetmusic and the original Android fork at https://github.com/MichaelBell/MidiSheetMusic-Android.
-- **drake7707** - Updated the app to support modern Android versions after it had been abandoned for years, fixed numerous bugs, and added new features.
+- **drake7707** - Updated the app to support modern Android versions after it had not been updated for years, fixed numerous bugs, and added new features.
 - **[ankineri](https://github.com/ankineri)** - Implemented USB MIDI keyboard support.
 
 Improvements introduced in this fork include:
