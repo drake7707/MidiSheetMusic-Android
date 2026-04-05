@@ -127,11 +127,13 @@ Tap the settings icon in the toolbar to open the song settings for the current p
 
 MIDI files are divided into tracks, where each track typically represents a separate instrument or hand part. The Track Options section shows one row for each track in the file. Each row includes:
 
-- **Track name and current instrument** - Shown as a label on the row.
-- **Visibility toggle** - Show or hide the track in the sheet music. Hidden tracks are not displayed but may still play.
-- **Mute toggle** - Mute or unmute the track during playback. A muted track is still shown in the sheet music but plays no sound. Useful for practicing one hand while reading both.
-- **Instrument** - Tap to open a picker and choose a different General MIDI instrument for that track during playback (for example, switch from piano to strings).
-- **Octave shift** - Cycles through three options: no shift (T), 8va (display the notes one octave higher on the staff), and 8vb (display the notes one octave lower on the staff). This adjusts how the notes are drawn on the staff without changing the pitch of the sound.
+| Control | Description |
+|---|---|
+| Track name and current instrument | Shown as a label on the row. |
+| Visibility toggle | Show or hide the track in the sheet music. Hidden tracks are not displayed but may still play. |
+| Mute toggle | Mute or unmute the track during playback. A muted track is still shown in the sheet music but plays no sound. Useful for practicing one hand while reading both. |
+| Instrument | Tap to open a picker and choose a different General MIDI instrument for that track during playback (for example, switch from piano to strings). |
+| Octave shift | Cycles through three options: no shift (T), 8va (display the notes one octave higher on the staff), and 8vb (display the notes one octave lower on the staff). This adjusts how the notes are drawn on the staff without changing the pitch of the sound. |
 
 A **Set All Instruments to Piano** button is also available to quickly reset every track to a piano sound.
 
@@ -146,7 +148,6 @@ The **Combine / Split to Two Staffs** toggle merges all tracks into two staves (
 | Show Lyrics | If the MIDI file contains embedded lyrics, display them under the notes. |
 | Show Note Letters | Display the note name next to each note head. You can choose English letters (C, C#), Fixed Do-Re-Mi (Do is always C), Movable Do-Re-Mi (Do follows the key), Fixed Numbers, or Movable Numbers. |
 | Show Measure Numbers | Display the measure number at the start of each staff. |
-| Large Note Size | Switch between normal and large note sizes to improve readability. |
 
 ### Notation Options
 
@@ -217,7 +218,7 @@ Source code is available at: https://github.com/drake7707/MidiSheetMusic-Android
 ## Contributors
 
 - **Madhav Vaidyanathan** - Original creator of MidiSheetMusic. The original SourceForge project can be found at https://sourceforge.net/projects/midisheetmusic and the original Android fork at https://github.com/MichaelBell/MidiSheetMusic-Android.
-- **drake7707** - Took over Android development, updated the app to support modern Android versions, redesigned the UI, fixed numerous bugs, and added new features.
+- **drake7707** - Updated the app to support modern Android versions after it had been abandoned for years, fixed numerous bugs, and added new features.
 - **[ankineri](https://github.com/ankineri)** - Implemented USB MIDI keyboard support.
 
 Improvements introduced in this fork include:
@@ -229,8 +230,7 @@ Improvements introduced in this fork include:
 - BPM display: the speed label now shows both the percentage and the resulting tempo in beats per minute, updating live as you adjust the slider.
 - Keyboard shortcuts for all major playback actions.
 - Bass clef and treble clef filter buttons (replacing the generic L/R labels) for clearer left/right hand selection.
-- Consistent toolbar height in both portrait and landscape orientations.
-- Visual redesign with light and dark mode support throughout.
+- Portrait mode support: the app previously locked the screen to landscape; it now works in both orientations.
 
 ---
 
