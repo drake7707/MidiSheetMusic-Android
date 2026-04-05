@@ -225,7 +225,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
                 showMeasurePicker(false));
 
         drawerLayout.findViewById(R.id.btn_song_settings).setOnClickListener(v -> {
-            drawerLayout.closeDrawer(GravityCompat.END);
+            drawerLayout.closeDrawer(GravityCompat.START);
             changeSettings();
         });
 

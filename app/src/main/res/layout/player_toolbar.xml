@@ -20,6 +20,13 @@
         android:contentDescription="@string/back" />
 
     <ImageButton
+        android:id="@+id/btn_settings"
+        style="@style/ToolbarButtonStyle"
+        android:layout_width="40dp"
+        android:contentDescription="@string/settings"
+        android:src="@drawable/ic_settings" />
+
+    <ImageButton
         android:id="@+id/btn_replay"
         style="@style/ToolbarButtonStyle"
         android:src="@drawable/ic_replay"
@@ -96,11 +103,5 @@
         android:contentDescription="@string/show_hide_piano"
         android:src="@drawable/ic_piano" />
 
-    <ImageButton
-        android:id="@+id/btn_settings"
-        style="@style/ToolbarButtonStyle"
-        android:layout_width="wrap_content"
-        android:contentDescription="@string/settings"
-        android:src="@drawable/ic_settings" />
 </LinearLayout>
 <!--</merge>-->

@@ -210,7 +210,7 @@ public class MidiPlayer extends LinearLayout {
         fastFwdButton.setOnClickListener(v -> FastForward());
         settingsButton.setOnClickListener(v -> {
             if (drawerLayout != null) {
-                drawerLayout.openDrawer(GravityCompat.END);
+                drawerLayout.openDrawer(GravityCompat.START);
             }
         });
         midiButton.setOnClickListener(v -> toggleMidi());
