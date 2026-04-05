@@ -44,6 +44,8 @@ public class Staff {
     private ClefSymbol clefsym;         /** The left-side Clef symbol */
     private AccidSymbol[] keys;         /** The key signature symbols */
     private boolean showMeasures;       /** If true, show the measure numbers */
+    private boolean showTrackLabels;    /** If true, show track number and instrument label */
+    private String trackLabel;          /** The track label text (e.g. "0: Violin") */
     private int keysigWidth;            /** The width of the clef and key signature */
     private int width;                  /** The width of the staff in pixels */
     private int height;                 /** The height of the staff in pixels */
@@ -67,6 +69,17 @@ public class Staff {
         this.tracknum = tracknum;
         this.totaltracks = totaltracks;
         showMeasures = (options.showMeasures && tracknum == 0);
+        showTrackLabels = options.showTrackLabels;
+        if (showTrackLabels && options.trackInstrumentNames != null &&
+                tracknum < options.trackInstrumentNames.length) {
+            String instrName = options.trackInstrumentNames[tracknum];
+            if (instrName != null && instrName.length() > 8) {
+                instrName = instrName.substring(0, 8);
+            }
+            trackLabel = tracknum + ": " + (instrName != null ? instrName : "");
+        } else {
+            trackLabel = null;
+        }
         if (options.time != null) {
             measureLength = options.time.getMeasure();
         }
@@ -135,6 +148,9 @@ public class Staff {
         below = Math.max(below, clefsym.getBelowStaff());
         if (showMeasures) {
             above = Math.max(above, SheetMusic.NoteHeight * 3);
+        }
+        if (showTrackLabels) {
+            above = Math.max(above, SheetMusic.NoteHeight * 2);
         }
         ytop = above + SheetMusic.NoteHeight;
         height = SheetMusic.NoteHeight*5 + ytop + below;
@@ -269,6 +285,19 @@ public class Staff {
     }
 
 
+    /** Draw the track label (track number and instrument name) above the clef */
+    private void DrawTrackLabel(Canvas canvas, Paint paint) {
+        if (trackLabel == null) {
+            return;
+        }
+        float savedTextSize = paint.getTextSize();
+        paint.setTextSize(savedTextSize * 0.75f);
+        int ypos = ytop - SheetMusic.NoteHeight;
+        canvas.drawText(trackLabel, SheetMusic.LeftMargin + 2, ypos, paint);
+        paint.setTextSize(savedTextSize);
+    }
+
+
     /** Draw the measure numbers for each measure */
     private void DrawMeasureNumbers(Canvas canvas, Paint paint) {
         /* Skip the left side Clef symbol and key signature */
@@ -367,6 +396,9 @@ public class Staff {
 
         if (showMeasures) {
             DrawMeasureNumbers(canvas, paint);
+        }
+        if (showTrackLabels) {
+            DrawTrackLabel(canvas, paint);
         }
         if (lyrics != null) {
             DrawLyrics(canvas, paint);
