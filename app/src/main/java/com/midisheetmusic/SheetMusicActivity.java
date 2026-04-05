@@ -83,6 +83,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
     private TextView txtLoopEndBadge;
     private boolean loopExpanded = false;
     private boolean updatingToggles = false;
+    private int currentOrientation = -1;
 
     private static final int settingsRequestCode = 1;
 
@@ -98,6 +99,8 @@ public class SheetMusicActivity extends MidiHandlingActivity {
         hideSystemUI();
 
         setContentView(R.layout.sheet_music_layout);
+
+        currentOrientation = getResources().getConfiguration().orientation;
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -293,10 +296,16 @@ public class SheetMusicActivity extends MidiHandlingActivity {
         sheet.draw();
     }
 
-    /** Always display this activity in landscape mode. */
+    /** Redraw the sheet music when the screen orientation changes. */
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        if (newConfig.orientation != currentOrientation) {
+            currentOrientation = newConfig.orientation;
+            if (midifile != null && options != null) {
+                createSheetMusic(options);
+            }
+        }
     }
 
     /** To change the sheet music options, start the SettingsActivity. */

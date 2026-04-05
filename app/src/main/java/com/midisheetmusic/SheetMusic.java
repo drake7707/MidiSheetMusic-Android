@@ -1503,9 +1503,11 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
      *  its parent. Avoids the "disconnect: not connected" BufferQueueProducer
      *  error that occurs when the surface is already gone by the time the
      *  system tries to disconnect it a second time.
+     *  Safe to call multiple times.
      */
     public void cleanup() {
-        getHolder().removeCallback(this);
+        SurfaceHolder holder = getHolder();
+        holder.removeCallback(this);
     }
 
     public MusicSymbol getCurrentNote(int currentTime) {
