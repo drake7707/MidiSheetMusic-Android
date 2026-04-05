@@ -242,6 +242,7 @@ public class MidiPlayer extends LinearLayout {
             public void onStartTrackingTouch(SeekBar bar) {
             }
             public void onStopTrackingTouch(SeekBar bar) {
+                if (playstate == playing) restartWithNewSpeed();
             }
         });
 
@@ -769,12 +770,38 @@ public class MidiPlayer extends LinearLayout {
     public void SpeedUp() {
         int newProgress = Math.min(speedBar.getProgress() + 10, speedBar.getMax());
         speedBar.setProgress(newProgress);
+        if (playstate == playing) restartWithNewSpeed();
     }
 
     /** Decrease the playback speed by 10 percentage points (floored at 10%). */
     public void SpeedDown() {
         int newProgress = Math.max(speedBar.getProgress() - 10, 10);
         speedBar.setProgress(newProgress);
+        if (playstate == playing) restartWithNewSpeed();
+    }
+
+    /** Restart playback from the current position using the current speedBar value.
+     *  Called when the speed is changed while the song is already playing so the
+     *  new tempo takes effect immediately rather than only at the next Play().
+     */
+    private void restartWithNewSpeed() {
+        // Accurately record where we are right now
+        long msec = SystemClock.uptimeMillis() - startTime;
+        currentPulseTime = startPulseTime + msec * pulsesPerMsec;
+
+        // Stop the current audio and timer
+        timer.removeCallbacks(TimerCallback);
+        StopSound();
+
+        // Prepare the new MIDI file starting from the current position
+        startPulseTime = currentPulseTime;
+        options.pauseTime = (int)(currentPulseTime - options.shifttime);
+        CreateMidiFile();   // also updates pulsesPerMsec for the new tempo
+
+        // Resume immediately from the same position at the new speed
+        startTime = SystemClock.uptimeMillis();
+        PlaySound(tempSoundFile);
+        timer.postDelayed(TimerCallback, 100);
     }
 
 
@@ -803,6 +830,15 @@ public class MidiPlayer extends LinearLayout {
         if (currentPulseTime > midifile.getTotalPulses()) {
             currentPulseTime -= midifile.getTime().getMeasure();
         }
+
+        /* Snap to the exact start time of the chord at this position so that
+         * the first arrow-key press after a click advances by one note rather
+         * than merely landing on the chord boundary. */
+        MusicSymbol chord = sheet.getCurrentNote((int) currentPulseTime);
+        if (chord != null) {
+            currentPulseTime = chord.getStartTime();
+        }
+
         sheet.ShadeNotes((int)currentPulseTime, (int)prevPulseTime, SheetMusic.DontScroll);
         piano.ShadeNotes((int)currentPulseTime, (int)prevPulseTime);
     }
