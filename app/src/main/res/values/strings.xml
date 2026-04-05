@@ -34,6 +34,7 @@
     <string name="right_hand_color">Right Hand Color</string>
     <string name="left_hand_color">Left Hand Color</string>
     <string name="show_measures">Show Measure Numbers</string>
+    <string name="show_track_labels">Show Track Labels</string>
     <string name="play_measures_in_loop_title">Settings for Play Measures in a Loop</string>
     <string name="play_measures_in_loop">Play Measures in a Loop</string>
     <string name="play_measures_in_loop_start">Start Measure</string>

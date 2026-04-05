@@ -368,6 +368,142 @@ public class MidiFile {
     };
     /* End Instruments */
 
+    /** Abbreviated names for each instrument, parallel to Instruments[].
+     *  Index 0–127 = General MIDI patch number; index 128 = Percussion.
+     */
+    public static String[] InstrumentAbbreviations = {
+        "Pno.A",    // Acoustic Grand Piano
+        "Pno.B",    // Bright Acoustic Piano
+        "Pno.EG",   // Electric Grand Piano
+        "Pno.HT",   // Honky-tonk Piano
+        "EP1",      // Electric Piano 1
+        "EP2",      // Electric Piano 2
+        "Hps.",     // Harpsichord
+        "Clv.",     // Clavinet
+        "Cel.",     // Celesta
+        "Glo.",     // Glockenspiel
+        "Mbx.",     // Music Box
+        "Vib.",     // Vibraphone
+        "Mar.",     // Marimba
+        "Xyl.",     // Xylophone
+        "Tbel.",    // Tubular Bells
+        "Dul.",     // Dulcimer
+        "Org.D",    // Drawbar Organ
+        "Org.P",    // Percussive Organ
+        "Org.R",    // Rock Organ
+        "Org.C",    // Church Organ
+        "Org.Re",   // Reed Organ
+        "Acc.",     // Accordion
+        "Hrm.",     // Harmonica
+        "Acc.T",    // Tango Accordion
+        "Gtr.N",    // Acoustic Guitar (nylon)
+        "Gtr.S",    // Acoustic Guitar (steel)
+        "EG.J",     // Electric Guitar (jazz)
+        "EG.C",     // Electric Guitar (clean)
+        "EG.M",     // Electric Guitar (muted)
+        "EG.O",     // Overdriven Guitar
+        "EG.D",     // Distortion Guitar
+        "Gtr.H",    // Guitar Harmonics
+        "Bs.A",     // Acoustic Bass
+        "Bs.EF",    // Electric Bass (finger)
+        "Bs.EP",    // Electric Bass (pick)
+        "Bs.Fr",    // Fretless Bass
+        "Bs.S1",    // Slap Bass 1
+        "Bs.S2",    // Slap Bass 2
+        "Bs.Sy1",   // Synth Bass 1
+        "Bs.Sy2",   // Synth Bass 2
+        "Vln.",     // Violin
+        "Vla.",     // Viola
+        "Vc.",      // Cello
+        "Cb.",      // Contrabass
+        "Str.Tr",   // Tremolo Strings
+        "Str.Pz",   // Pizzicato Strings
+        "Hp.",      // Orchestral Harp
+        "Tmp.",     // Timpani
+        "Str.E1",   // String Ensemble 1
+        "Str.E2",   // String Ensemble 2
+        "Str.Sy1",  // Synth Strings 1
+        "Str.Sy2",  // Synth Strings 2
+        "Chr.A",    // Choir Aahs
+        "Chr.O",    // Voice Oohs
+        "Chr.S",    // Synth Choir
+        "Orch.H",   // Orchestra Hit
+        "Tpt.",     // Trumpet
+        "Tbn.",     // Trombone
+        "Tba.",     // Tuba
+        "Tpt.M",    // Muted Trumpet
+        "Hn.",      // French Horn
+        "Brs.S",    // Brass Section
+        "Brs.Sy1",  // Synth Brass 1
+        "Brs.Sy2",  // Synth Brass 2
+        "Sax.S",    // Soprano Sax
+        "Sax.A",    // Alto Sax
+        "Sax.T",    // Tenor Sax
+        "Sax.B",    // Baritone Sax
+        "Ob.",      // Oboe
+        "EHn.",     // English Horn
+        "Bsn.",     // Bassoon
+        "Cl.",      // Clarinet
+        "Picc.",    // Piccolo
+        "Fl.",      // Flute
+        "Rec.",     // Recorder
+        "PFl.",     // Pan Flute
+        "Bot.",     // Blown Bottle
+        "Shk.",     // Shakuhachi
+        "Whs.",     // Whistle
+        "Oca.",     // Ocarina
+        "Ld.Sq",    // Lead 1 (square)
+        "Ld.Sw",    // Lead 2 (sawtooth)
+        "Ld.Cal",   // Lead 3 (calliope)
+        "Ld.Ch",    // Lead 4 (chiff)
+        "Ld.Char",  // Lead 5 (charang)
+        "Ld.Vo",    // Lead 6 (voice)
+        "Ld.5th",   // Lead 7 (fifths)
+        "Ld.BL",    // Lead 8 (bass+lead)
+        "Pd.NA",    // Pad 1 (new age)
+        "Pd.W",     // Pad 2 (warm)
+        "Pd.P",     // Pad 3 (polysynth)
+        "Pd.C",     // Pad 4 (choir)
+        "Pd.B",     // Pad 5 (bowed)
+        "Pd.M",     // Pad 6 (metallic)
+        "Pd.H",     // Pad 7 (halo)
+        "Pd.Sw",    // Pad 8 (sweep)
+        "FX.R",     // FX 1 (rain)
+        "FX.ST",    // FX 2 (soundtrack)
+        "FX.Cr",    // FX 3 (crystal)
+        "FX.At",    // FX 4 (atmosphere)
+        "FX.Br",    // FX 5 (brightness)
+        "FX.Gb",    // FX 6 (goblins)
+        "FX.Ec",    // FX 7 (echoes)
+        "FX.SF",    // FX 8 (sci-fi)
+        "Sit.",     // Sitar
+        "Bjo.",     // Banjo
+        "Shm.",     // Shamisen
+        "Koto",     // Koto
+        "Kal.",     // Kalimba
+        "Bag.",     // Bagpipe
+        "Fid.",     // Fiddle
+        "Sha.",     // Shanai
+        "Tnk.B",    // Tinkle Bell
+        "Ago.",     // Agogo
+        "Stl.D",    // Steel Drums
+        "Wblk.",    // Woodblock
+        "Tko.",     // Taiko Drum
+        "M.Tom",    // Melodic Tom
+        "Syn.D",    // Synth Drum
+        "Cym.R",    // Reverse Cymbal
+        "Gtr.FN",   // Guitar Fret Noise
+        "Br.No",    // Breath Noise
+        "Sea.",     // Seashore
+        "Brd.",     // Bird Tweet
+        "Tel.",     // Telephone Ring
+        "Heli.",    // Helicopter
+        "Appl.",    // Applause
+        "Gun.",     // Gunshot
+        "Perc.",    // Percussion (channel 9)
+    };
+    /* End InstrumentAbbreviations */
+
     /** Return a String representation of a Midi event */
     private String EventName(int ev) {
         if (ev >= EventNoteOff && ev < EventNoteOff + 16)

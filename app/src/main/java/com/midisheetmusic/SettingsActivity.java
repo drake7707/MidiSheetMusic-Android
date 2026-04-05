@@ -141,6 +141,7 @@ public class SettingsActivity extends AppCompatActivity {
         private SwitchPreferenceCompat useColors;
         private SwitchPreferenceCompat colorAccidentals;    /** Use RED as color for sharps and flats */
         private SwitchPreferenceCompat useFullHeight;       /** Drawing on full height option */
+        private SwitchPreferenceCompat showTrackLabels;     /** Show track number and instrument label */
 
         private ColorPreference shade1Color;          /** Right-hand color */
         private ColorPreference shade2Color;          /** Left-hand color */
@@ -170,6 +171,7 @@ public class SettingsActivity extends AppCompatActivity {
             root.addPreference(sheetTitle);
 
             createShowLyricsPrefs(root);
+            createShowTrackLabelsPrefs(root);
             if (options.tracks.length != 2) {
                 createTwoStaffsPrefs(root);
             }
@@ -260,6 +262,14 @@ public class SettingsActivity extends AppCompatActivity {
                 return true;
             });
             root.addPreference(useFullHeight);
+        }
+
+        /** Create the "Show Track Labels" preference */
+        private void createShowTrackLabelsPrefs(PreferenceScreen root) {
+            showTrackLabels = new SwitchPreferenceCompat(context);
+            showTrackLabels.setTitle(R.string.show_track_labels);
+            showTrackLabels.setChecked(options.showTrackLabels);
+            root.addPreference(showTrackLabels);
         }
 
         /** Create the "Show Note Letters" preference */
@@ -497,6 +507,7 @@ public class SettingsActivity extends AppCompatActivity {
                 options.noteColors[i] = noteColors[i].getColor();
             }
             options.showLyrics = showLyrics.isChecked();
+            options.showTrackLabels = showTrackLabels.isChecked();
             if (twoStaffs != null)
                 options.twoStaffs = twoStaffs.isChecked();
             else
