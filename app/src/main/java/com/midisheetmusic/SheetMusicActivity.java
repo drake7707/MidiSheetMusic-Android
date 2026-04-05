@@ -340,6 +340,14 @@ public class SheetMusicActivity extends MidiHandlingActivity {
                 if (options.instruments[i] != midifile.getTracks().get(i).getInstrument()) {
                     options.useDefaultInstruments = false;
                 }
+                if (options.trackInstrumentNames != null && i < options.trackInstrumentNames.length) {
+                    int instr = options.instruments[i];
+                    if (instr >= 0 && instr < MidiFile.InstrumentAbbreviations.length) {
+                        options.trackInstrumentNames[i] = MidiFile.InstrumentAbbreviations[instr];
+                    } else {
+                        options.trackInstrumentNames[i] = "";
+                    }
+                }
             }
             saveOptions();
             createSheetMusic(options);
