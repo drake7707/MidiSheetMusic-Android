@@ -28,6 +28,7 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -713,6 +714,8 @@ public class MidiPlayer extends LinearLayout {
         }
 
         MusicSymbol currentNote = sheet.getCurrentNote((int) currentPulseTime);
+        Log.d("NoteNav", "NextNote: currentPulse=" + (int)currentPulseTime
+                + " currentNote=" + (currentNote != null ? currentNote.getStartTime() : "null"));
         if (currentNote == null) {
             return;
         }
@@ -721,6 +724,7 @@ public class MidiPlayer extends LinearLayout {
         if (currentNote.getStartTime() > (int) currentPulseTime) {
             // currentPulseTime is before this note's boundary — snap to it
             newPulseTime = currentNote.getStartTime();
+            Log.d("NoteNav", "NextNote: snapping to boundary " + (int)newPulseTime);
         } else {
             // Already at a note boundary — advance to the next note
             MusicSymbol nextNote = sheet.getCurrentNote(currentNote.getStartTime() + 1);
@@ -728,6 +732,7 @@ public class MidiPlayer extends LinearLayout {
                 return;
             }
             newPulseTime = nextNote.getStartTime();
+            Log.d("NoteNav", "NextNote: advancing to " + (int)newPulseTime);
         }
 
         sheet.ShadeNotes(-10, (int) currentPulseTime, SheetMusic.DontScroll);
@@ -752,6 +757,8 @@ public class MidiPlayer extends LinearLayout {
         }
 
         MusicSymbol prevNote = sheet.getPrevNote((int) currentPulseTime);
+        Log.d("NoteNav", "PrevNote: currentPulse=" + (int)currentPulseTime
+                + " prevNote=" + (prevNote != null ? prevNote.getStartTime() : "null"));
         if (prevNote == null) {
             return;
         }
@@ -835,9 +842,12 @@ public class MidiPlayer extends LinearLayout {
          * the first arrow-key press after a click advances by one note rather
          * than merely landing on the chord boundary. */
         MusicSymbol chord = sheet.getCurrentNote((int) currentPulseTime);
+        Log.d("NoteNav", "MoveToClicked: rawPulse=" + (int)currentPulseTime
+                + " chord=" + (chord != null ? chord.getStartTime() : "null"));
         if (chord != null) {
             currentPulseTime = chord.getStartTime();
         }
+        Log.d("NoteNav", "MoveToClicked: finalCurrentPulse=" + (int)currentPulseTime);
 
         sheet.ShadeNotes((int)currentPulseTime, (int)prevPulseTime, SheetMusic.DontScroll);
         piano.ShadeNotes((int)currentPulseTime, (int)prevPulseTime);
