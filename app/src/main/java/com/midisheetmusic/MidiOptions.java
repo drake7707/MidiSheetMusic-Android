@@ -282,9 +282,11 @@ public class MidiOptions implements Serializable {
             if (json.has("countInMeasures")) {
                 options.countInMeasures = json.getInt("countInMeasures");
             } else if (json.has("delayStartInterval")) {
-                /* Migrate legacy delayStartInterval (milliseconds) to countInMeasures */
+                /* Migrate legacy delayStartInterval (milliseconds) to countInMeasures.
+                 * This is an approximation: 1 second ≈ 1 measure at moderate tempo.
+                 * Result is capped at 4 (the maximum allowed value). */
                 int legacyDelayMs = json.getInt("delayStartInterval");
-                options.countInMeasures = legacyDelayMs / 1000;
+                options.countInMeasures = Math.min(4, legacyDelayMs / 1000);
             } else {
                 options.countInMeasures = 0;
             }

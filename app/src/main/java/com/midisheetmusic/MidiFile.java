@@ -947,10 +947,20 @@ public class MidiFile {
         int beatPulses = ts.getMeasure() / ts.getNumerator();
         int tickDur = Math.max(1, beatPulses / 4);
 
-        /* The tempo event is at index 0 with DeltaTime=0; insert after it. */
+        /* The tempo event is at index 0 with DeltaTime=0; insert count-in after it.
+         * The caller (ApplyOptionsToEvents / ApplyOptionsPerChannel) always prepends
+         * a tempo event at index 0, so this assumption is always valid. */
         int insertPos = 1;
         if (firstTrack.size() > insertPos) {
-            /* Shift the first real event forward so it starts after the count-in. */
+            /* Compute the DeltaTime adjustment for the first real event.
+             * After inserting, the last count-in event (NoteOff) sits at absolute
+             * time (totalBeats-1)*beatPulses + tickDur.  The first real event
+             * must occur at its original time T plus the total count-in duration
+             * (totalBeats * beatPulses).  The required DeltaTime relative to the
+             * last NoteOff is therefore:
+             *   (T + totalBeats*beatPulses) - ((totalBeats-1)*beatPulses + tickDur)
+             *   = T + beatPulses - tickDur
+             * so we add (beatPulses - tickDur) to the existing DeltaTime T. */
             firstTrack.get(insertPos).DeltaTime += beatPulses - tickDur;
         }
         firstTrack.addAll(insertPos, countInEvents);
