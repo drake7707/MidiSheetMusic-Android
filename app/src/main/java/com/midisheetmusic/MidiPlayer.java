@@ -580,7 +580,7 @@ public class MidiPlayer extends LinearLayout {
      *  If playing, initiate a stop and wait for the timer to finish.
      *  Then do the actual stop.
      */
-    void Reset() {
+    public void Reset() {
         if (midifile == null || sheet == null) {
             return;
         }
@@ -636,7 +636,7 @@ public class MidiPlayer extends LinearLayout {
      *  So to rewind, just decrease the currentPulseTime,
      *  and re-shade the sheet music.
      */
-    void Rewind() {
+    public void Rewind() {
         if (midifile == null || sheet == null) {
             return;
         }
@@ -667,7 +667,7 @@ public class MidiPlayer extends LinearLayout {
      *  So to fast forward, just increase the currentPulseTime,
      *  and re-shade the sheet music.
      */
-    void FastForward() {
+    public void FastForward() {
         if (midifile == null || sheet == null) {
             return;
         }
@@ -687,6 +687,83 @@ public class MidiPlayer extends LinearLayout {
         }
         sheet.ShadeNotes((int)currentPulseTime, (int)prevPulseTime, SheetMusic.ImmediateScroll);
         piano.ShadeNotes((int)currentPulseTime, (int)prevPulseTime);
+    }
+
+    /** Toggle between playing and paused/stopped state. */
+    public void PlayPause() {
+        if (playstate == playing) {
+            Pause();
+        } else if (playstate == stopped || playstate == paused) {
+            Play();
+        }
+    }
+
+    /** Advance the current position by one note.
+     *  The music must be in the paused/stopped state.
+     */
+    public void NextNote() {
+        if (midifile == null || sheet == null) {
+            return;
+        }
+        if (playstate != paused && playstate != stopped) {
+            return;
+        }
+
+        MusicSymbol currentNote = sheet.getCurrentNote((int) currentPulseTime);
+        if (currentNote == null) {
+            return;
+        }
+        MusicSymbol nextNote = sheet.getCurrentNote(currentNote.getStartTime() + 1);
+        if (nextNote == null) {
+            return;
+        }
+
+        sheet.ShadeNotes(-10, (int) currentPulseTime, SheetMusic.DontScroll);
+        piano.ShadeNotes(-10, (int) currentPulseTime);
+
+        prevPulseTime = currentPulseTime;
+        currentPulseTime = nextNote.getStartTime();
+
+        sheet.ShadeNotes((int) currentPulseTime, (int) prevPulseTime, SheetMusic.ImmediateScroll);
+        piano.ShadeNotes((int) currentPulseTime, (int) prevPulseTime);
+    }
+
+    /** Move the current position back by one note.
+     *  The music must be in the paused/stopped state.
+     */
+    public void PrevNote() {
+        if (midifile == null || sheet == null) {
+            return;
+        }
+        if (playstate != paused && playstate != stopped) {
+            return;
+        }
+
+        MusicSymbol prevNote = sheet.getPrevNote((int) currentPulseTime);
+        if (prevNote == null) {
+            return;
+        }
+
+        sheet.ShadeNotes(-10, (int) currentPulseTime, SheetMusic.DontScroll);
+        piano.ShadeNotes(-10, (int) currentPulseTime);
+
+        prevPulseTime = currentPulseTime;
+        currentPulseTime = prevNote.getStartTime();
+
+        sheet.ShadeNotes((int) currentPulseTime, (int) prevPulseTime, SheetMusic.ImmediateScroll);
+        piano.ShadeNotes((int) currentPulseTime, (int) prevPulseTime);
+    }
+
+    /** Increase the playback speed by 10 percentage points (capped at the seekbar maximum). */
+    public void SpeedUp() {
+        int newProgress = Math.min(speedBar.getProgress() + 10, speedBar.getMax());
+        speedBar.setProgress(newProgress);
+    }
+
+    /** Decrease the playback speed by 10 percentage points (floored at 10%). */
+    public void SpeedDown() {
+        int newProgress = Math.max(speedBar.getProgress() - 10, 10);
+        speedBar.setProgress(newProgress);
     }
 
 

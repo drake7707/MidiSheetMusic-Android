@@ -23,6 +23,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
@@ -342,6 +343,53 @@ public class SheetMusicActivity extends MidiHandlingActivity {
     public void onBackPressed() {
         saveOptions();
         super.onBackPressed();
+    }
+
+    /** Handle keyboard shortcuts for the player controls:
+     *  Space          - Play / Pause toggle
+     *  Left arrow     - Previous note
+     *  Right arrow    - Next note
+     *  Page Up        - Previous measure
+     *  Page Down      - Next measure
+     *  R              - Restart
+     *  + / Numpad +   - Speed up 10%
+     *  - / Numpad -   - Speed down 10%
+     */
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (player == null) {
+            return super.onKeyDown(keyCode, event);
+        }
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_SPACE:
+                player.PlayPause();
+                return true;
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                player.PrevNote();
+                return true;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                player.NextNote();
+                return true;
+            case KeyEvent.KEYCODE_PAGE_UP:
+                player.Rewind();
+                return true;
+            case KeyEvent.KEYCODE_PAGE_DOWN:
+                player.FastForward();
+                return true;
+            case KeyEvent.KEYCODE_R:
+                player.Reset();
+                return true;
+            case KeyEvent.KEYCODE_PLUS:
+            case KeyEvent.KEYCODE_NUMPAD_ADD:
+                player.SpeedUp();
+                return true;
+            case KeyEvent.KEYCODE_MINUS:
+            case KeyEvent.KEYCODE_NUMPAD_SUBTRACT:
+                player.SpeedDown();
+                return true;
+            default:
+                return super.onKeyDown(keyCode, event);
+        }
     }
 
     /** Show the "Save As Images" dialog */
