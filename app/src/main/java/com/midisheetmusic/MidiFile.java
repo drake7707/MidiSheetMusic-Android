@@ -1010,9 +1010,11 @@ public class MidiFile {
         int num_tracks = allevents.size();
         int[] instruments = new int[num_tracks];
         boolean[] keeptracks = new boolean[num_tracks];
+        int[] trackVolume = new int[num_tracks];
         for (i = 0; i < num_tracks; i++) {
             instruments[i] = 0;
             keeptracks[i] = true;
+            trackVolume[i] = 100;
         }
         for (int tracknum = 0; tracknum < tracks.size(); tracknum++) {
             MidiTrack track = tracks.get(tracknum);
@@ -1020,6 +1022,9 @@ public class MidiFile {
             instruments[realtrack] = options.instruments[tracknum];
             if (!options.tracks[tracknum] || options.mute[tracknum]) {
                 keeptracks[realtrack] = false;
+            }
+            if (options.volume != null && tracknum < options.volume.length) {
+                trackVolume[realtrack] = options.volume[tracknum];
             }
         }
 
@@ -1031,8 +1036,9 @@ public class MidiFile {
             newevents.get(tracknum).add(0, mevent);
         }
 
-        /* Change the note number (transpose), instrument, and tempo */
+        /* Change the note number (transpose), instrument, tempo, and volume */
         for (int tracknum = 0; tracknum < newevents.size(); tracknum++) {
+            int vol = trackVolume[tracknum];
             for (MidiEvent mevent : newevents.get(tracknum)) {
                 int num = mevent.Notenumber + options.transpose;
                 if (num < 0)
@@ -1043,6 +1049,7 @@ public class MidiFile {
                 if (!options.useDefaultInstruments) {
                     mevent.Instrument = (byte)instruments[tracknum];
                 }
+                mevent.Velocity = (byte) Math.min(127, ((mevent.Velocity & 0xFF) * vol) / 100);
                 mevent.Tempo = options.tempo;
             }
         }
@@ -1132,7 +1139,7 @@ public class MidiFile {
                     mevent.Velocity = 0;
                 } else {
                     int vol = channelVolume[mevent.Channel];
-                    mevent.Velocity = (byte)((mevent.Velocity * vol) / 100);
+                    mevent.Velocity = (byte) Math.min(127, ((mevent.Velocity & 0xFF) * vol) / 100);
                 }
                 if (!options.useDefaultInstruments) {
                     mevent.Instrument = (byte)instruments[mevent.Channel];
