@@ -1095,6 +1095,7 @@ public class MidiFile {
      */
     private static 
     ArrayList<ArrayList<MidiEvent>> StartAtPauseTime(ArrayList<ArrayList<MidiEvent>> list, int pauseTime) {
+        Log.d("MidiDebug", "StartAtPauseTime: pauseTime=" + pauseTime + " numTracks=" + list.size());
         ArrayList<ArrayList<MidiEvent>> newlist = new ArrayList<ArrayList<MidiEvent>>(list.size());
         for (int tracknum = 0; tracknum < list.size(); tracknum++) {
             ArrayList<MidiEvent> events = list.get(tracknum);
@@ -1235,6 +1236,27 @@ public class MidiFile {
 
         if (options.pauseTime != 0) {
             newevents = StartAtPauseTime(newevents, options.pauseTime);
+        }
+
+        /* Log the first several events per track to diagnose timing issues */
+        Log.d("MidiDebug", "ApplyOptionsToEvents: pauseTime=" + options.pauseTime
+            + " numTracks=" + newevents.size());
+        for (int tracknum = 0; tracknum < newevents.size(); tracknum++) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("  track[").append(tracknum).append("] ");
+            int shown = 0;
+            for (MidiEvent mevent : newevents.get(tracknum)) {
+                if (shown >= 10) { sb.append("..."); break; }
+                sb.append("[DT=").append(mevent.DeltaTime)
+                  .append(" ST=").append(mevent.StartTime)
+                  .append(" f=0x").append(Integer.toHexString(mevent.EventFlag & 0xFF));
+                if (mevent.EventFlag == EventNoteOn || mevent.EventFlag == EventNoteOff) {
+                    sb.append(" note=").append(mevent.Notenumber & 0xFF);
+                }
+                sb.append("] ");
+                shown++;
+            }
+            Log.d("MidiDebug", sb.toString());
         }
 
         /* Change the tracks to include */
