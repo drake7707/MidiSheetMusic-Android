@@ -571,11 +571,15 @@ public class Staff {
                 paint.setStyle(Paint.Style.FILL);
                 paint.setColor(Color.WHITE);
                 canvas.drawRect(0, 0, curr.getWidth()+4, this.getHeight()+4, paint);
-                /* Restore loop tint if this note falls within the loop region */
+                /* Restore loop tint if this note falls within the loop region.
+                 * Use the same vertical bounds as DrawLoopHighlight (staff bar height),
+                 * adjusted for the active canvas translation of (xpos-2, -2). */
                 if (isWithinLoopRegion(start)) {
+                    int ystart = (tracknum == 0) ? ytop - SheetMusic.LineWidth : 0;
+                    int yend   = (tracknum == totaltracks - 1) ? ytop + 4 * SheetMusic.NoteHeight : height;
                     paint.setStyle(Paint.Style.FILL);
                     paint.setColor(LOOP_TINT_COLOR);
-                    canvas.drawRect(0, 0, curr.getWidth()+4, this.getHeight()+4, paint);
+                    canvas.drawRect(0, ystart + 2, curr.getWidth()+4, yend + 2, paint);
                 }
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setColor(Color.BLACK);
