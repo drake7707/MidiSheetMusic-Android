@@ -560,6 +560,16 @@ public class Staff {
                 paint.setStyle(Paint.Style.FILL);
                 paint.setColor(Color.WHITE);
                 canvas.drawRect(0, 0, curr.getWidth()+4, this.getHeight()+4, paint);
+                /* Restore loop tint if this note falls within the loop region */
+                if (options.playMeasuresInLoop) {
+                    int loopStartTime = options.playMeasuresInLoopStart * measureLength;
+                    int loopEndTime   = (options.playMeasuresInLoopEnd + 1) * measureLength;
+                    if (start >= loopStartTime && start < loopEndTime) {
+                        paint.setStyle(Paint.Style.FILL);
+                        paint.setColor(Color.argb(51, 255, 0, 0));
+                        canvas.drawRect(0, 0, curr.getWidth()+4, this.getHeight()+4, paint);
+                    }
+                }
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setColor(Color.BLACK);
                 canvas.translate(-(xpos-2), 2);

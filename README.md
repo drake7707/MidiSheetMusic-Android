@@ -120,6 +120,9 @@ If you use a physical keyboard connected to your Android device (for example, vi
 | R | Reset (return to start) |
 | + or = | Increase playback speed |
 | - | Decrease playback speed |
+| S | Set loop start at the current position |
+| E | Set loop end at the current position |
+| L | Toggle loop on / off |
 
 These shortcuts also work reliably after tapping the sheet music, which would normally steal keyboard focus.
 
