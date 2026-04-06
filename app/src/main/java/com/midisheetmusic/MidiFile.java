@@ -1253,6 +1253,16 @@ public class MidiFile {
                 if (mevent.EventFlag == EventNoteOn || mevent.EventFlag == EventNoteOff) {
                     sb.append(" note=").append(mevent.Notenumber & 0xFF);
                 }
+                if (mevent.EventFlag == SysexEvent1 || mevent.EventFlag == SysexEvent2) {
+                    sb.append(" sysexLen=").append(mevent.Metalength);
+                    if (mevent.Value != null) {
+                        sb.append(" sysexBytes=");
+                        for (int b = 0; b < Math.min(mevent.Value.length, 16); b++) {
+                            sb.append(String.format("%02X", mevent.Value[b] & 0xFF));
+                            if (b < Math.min(mevent.Value.length, 16) - 1) sb.append(",");
+                        }
+                    }
+                }
                 sb.append("] ");
                 shown++;
             }
