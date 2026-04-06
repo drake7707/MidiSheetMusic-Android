@@ -496,20 +496,12 @@ public class MidiPlayer extends LinearLayout {
         if (player == null)
             return;
         try {
-            long t0 = SystemClock.uptimeMillis();
             FileInputStream input = activity.openFileInput(filename);
             player.reset();
             player.setDataSource(input.getFD());
             input.close();
-            long t1 = SystemClock.uptimeMillis();
             player.prepare();
-            long t2 = SystemClock.uptimeMillis();
             player.start();
-            long t3 = SystemClock.uptimeMillis();
-            Log.d("MidiDebug", "PlaySound: setDataSource=" + (t1-t0) + "ms"
-                + " prepare=" + (t2-t1) + "ms"
-                + " start=" + (t3-t2) + "ms"
-                + " totalBeforeReturn=" + (t3-t0) + "ms");
         }
         catch (IOException e) {
             Toast toast = Toast.makeText(activity, "Error: Unable to play MIDI sound", Toast.LENGTH_LONG);
@@ -675,9 +667,6 @@ public class MidiPlayer extends LinearLayout {
         }
 
         startTime = SystemClock.uptimeMillis();
-        Log.d("MidiDebug", "DoPlay: startTime set, startPulseTime=" + startPulseTime
-            + " currentPulseTime=" + currentPulseTime
-            + " pulsesPerMsec=" + pulsesPerMsec);
 
         timer.removeCallbacks(TimerCallback);
         timer.removeCallbacks(ReShade);
@@ -1023,13 +1012,6 @@ public class MidiPlayer extends LinearLayout {
             long msec = SystemClock.uptimeMillis() - startTime;
             prevPulseTime = currentPulseTime;
             currentPulseTime = startPulseTime + msec * pulsesPerMsec;
-
-            if (msec < 1500) {
-                Log.d("MidiDebug", "TimerCallback: msec=" + msec
-                    + " currentPulseTime=" + (int)currentPulseTime
-                    + " startPulseTime=" + (int)startPulseTime
-                    + " pulsesPerMsec=" + pulsesPerMsec);
-            }
 
             /* If we're playing in a loop, stop and restart */
             if (options.playMeasuresInLoop) {
