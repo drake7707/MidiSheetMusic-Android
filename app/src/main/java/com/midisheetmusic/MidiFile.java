@@ -633,16 +633,27 @@ public class MidiFile {
         CheckStartTimes(tracks);
 
         /* Determine the time signature */
-        int tempoCount = 0;
         long tempo = 0;
+        boolean foundMidSongTempo = false;
         int numer = 0;
         int denom = 0;
         for (ArrayList<MidiEvent> list : allevents) {
             for (MidiEvent mevent : list) {
                 if (mevent.Metaevent == MetaEventTempo) {
-                    // Take average of all tempos
-                    tempo += mevent.Tempo;
-                    tempoCount++;
+                    /* Use the last tempo event at tick 0 as the initial tempo.
+                     * Multiple tempo events at tick 0 (e.g. a default followed by
+                     * the actual tempo) are common in some MIDI files; the last one
+                     * wins and is the tempo that will actually be in effect when the
+                     * song starts playing.
+                     */
+                    if (mevent.StartTime == 0) {
+                        tempo = mevent.Tempo;
+                    } else if (!foundMidSongTempo) {
+                        /* No tick-0 tempo found yet; fall back to the first mid-song
+                         * tempo event so we have something reasonable. */
+                        tempo = mevent.Tempo;
+                        foundMidSongTempo = true;
+                    }
                 }
                 if (mevent.Metaevent == MetaEventTimeSignature && numer == 0) {
                     numer = mevent.Numerator;
@@ -652,9 +663,6 @@ public class MidiFile {
         }
         if (tempo == 0) {
             tempo = 500000; /* 500,000 microseconds = 0.05 sec */
-        }
-        else {
-            tempo = tempo / tempoCount;
         }
         if (numer == 0) {
             numer = 4; denom = 4;
@@ -1060,6 +1068,26 @@ public class MidiFile {
     }
 
 
+    /** Search the events for a ProgramChange event with the same channel.
+     *  If a matching event is found, update the instrument.  Else, add a
+     *  new ProgramChange event.  This mirrors UpdateControlChange so that
+     *  only the most-recent program-change per channel is retained when
+     *  restoring state for a seek operation.
+     *  Precondition: changeEvent.EventFlag == EventProgramChange.
+     */
+    private static void
+    UpdateProgramChange(ArrayList<MidiEvent> newevents, MidiEvent changeEvent) {
+        for (MidiEvent mevent : newevents) {
+            if ((mevent.EventFlag == EventProgramChange) &&
+                (mevent.Channel == changeEvent.Channel)) {
+
+                mevent.Instrument = changeEvent.Instrument;
+                return;
+            }
+        }
+        newevents.add(changeEvent);
+    }
+
     /** Start the Midi music at the given pause time (in pulses).
      *  Remove any NoteOn/NoteOff events that occur before the pause time.
      *  For other events, change the delta-time to 0 if they occur
@@ -1082,9 +1110,24 @@ public class MidiFile {
 
                         /* Skip NoteOn/NoteOff event */
                     }
+                    else if (mevent.EventFlag == SysexEvent1 ||
+                             mevent.EventFlag == SysexEvent2) {
+
+                        /* Skip SysEx events (e.g. GM/GS/XG Reset) that occur before
+                         * the seek point.  These are typically one-time initialisation
+                         * messages sent at the very start of the file.  Re-sending them
+                         * when seeking would reset all channels to their default state
+                         * (piano, no effects) AFTER the Program Change and Control Change
+                         * events we have already restored, undoing that restoration.
+                         */
+                    }
                     else if (mevent.EventFlag == EventControlChange) {
                         mevent.DeltaTime = 0;
                         UpdateControlChange(newevents, mevent);
+                    }
+                    else if (mevent.EventFlag == EventProgramChange) {
+                        mevent.DeltaTime = 0;
+                        UpdateProgramChange(newevents, mevent);
                     }
                     else {
                         mevent.DeltaTime = 0;
