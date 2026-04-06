@@ -38,6 +38,9 @@ import com.midisheetmusic.SheetMusic;
  */
 
 public class Staff {
+    /** Semi-transparent red used to tint the active loop region (~20% opacity). */
+    private static final int LOOP_TINT_COLOR = Color.argb(51, 255, 0, 0);
+
     private ArrayList<MusicSymbol> symbols;  /** The music symbols in this staff */
     private ArrayList<LyricSymbol> lyrics;   /** The lyrics to display (can be null) */
     private int ytop;                   /** The y pixel of the top of the staff */
@@ -363,11 +366,19 @@ public class Staff {
         int savedColor = paint.getColor();
 
         paint.setStyle(Paint.Style.FILL);
-        paint.setColor(Color.argb(51, 255, 0, 0));  /* red at ~20% opacity */
+        paint.setColor(LOOP_TINT_COLOR);  /* red at ~20% opacity */
         canvas.drawRect(loopStartX, ystart, loopEndX, yend, paint);
 
         paint.setStyle(savedStyle);
         paint.setColor(savedColor);
+    }
+
+    /** Return true if the given pulse time falls within the active loop region. */
+    private boolean isWithinLoopRegion(int pulseTime) {
+        if (!options.playMeasuresInLoop) return false;
+        int loopStartTime = options.playMeasuresInLoopStart * measureLength;
+        int loopEndTime   = (options.playMeasuresInLoopEnd + 1) * measureLength;
+        return pulseTime >= loopStartTime && pulseTime < loopEndTime;
     }
 
     /** Draw the five horizontal lines of the staff */
@@ -560,6 +571,12 @@ public class Staff {
                 paint.setStyle(Paint.Style.FILL);
                 paint.setColor(Color.WHITE);
                 canvas.drawRect(0, 0, curr.getWidth()+4, this.getHeight()+4, paint);
+                /* Restore loop tint if this note falls within the loop region */
+                if (isWithinLoopRegion(start)) {
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setColor(LOOP_TINT_COLOR);
+                    canvas.drawRect(0, 0, curr.getWidth()+4, this.getHeight()+4, paint);
+                }
                 paint.setStyle(Paint.Style.STROKE);
                 paint.setColor(Color.BLACK);
                 canvas.translate(-(xpos-2), 2);
