@@ -1058,7 +1058,44 @@ public class MidiPlayer extends LinearLayout {
         currentPulseTime = 0;
         prevPulseTime = -1;
         StopSound();
-        timer.postDelayed(DoPlay, 300);
+        timer.postDelayed(DoPlay, 0);
+    }
+
+    /** Return the measure number (0-based) that corresponds to the current playback position. */
+    public int getCurrentMeasure() {
+        if (midifile == null) {
+            return 0;
+        }
+        double measureLen = midifile.getTime().getMeasure();
+        if (measureLen <= 0) {
+            return 0;
+        }
+        return (int)(currentPulseTime / measureLen);
+    }
+
+    /** Set the loop-start measure to the current playback position and enable the loop. */
+    public void SetLoopStart() {
+        if (midifile == null) return;
+        int measure = getCurrentMeasure();
+        options.playMeasuresInLoopStart = measure;
+        if (options.playMeasuresInLoopStart > options.playMeasuresInLoopEnd) {
+            options.playMeasuresInLoopEnd = options.playMeasuresInLoopStart;
+        }
+    }
+
+    /** Set the loop-end measure to the current playback position and enable the loop. */
+    public void SetLoopEnd() {
+        if (midifile == null) return;
+        int measure = getCurrentMeasure();
+        options.playMeasuresInLoopEnd = measure;
+        if (options.playMeasuresInLoopStart > options.playMeasuresInLoopEnd) {
+            options.playMeasuresInLoopStart = options.playMeasuresInLoopEnd;
+        }
+    }
+
+    /** Toggle the "play measures in a loop" feature on/off. */
+    public void ToggleLoop() {
+        options.playMeasuresInLoop = !options.playMeasuresInLoop;
     }
 
     public boolean isInMidiMode() {

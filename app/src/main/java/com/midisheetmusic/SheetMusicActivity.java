@@ -286,6 +286,12 @@ public class SheetMusicActivity extends MidiHandlingActivity {
         dialog.getListView().setSelection(currentSelection);
     }
 
+    /** Update the loop start/end badge text in the settings drawer to reflect current options. */
+    private void updateLoopBadges() {
+        txtLoopStartBadge.setText(String.valueOf(options.playMeasuresInLoopStart + 1));
+        txtLoopEndBadge.setText(String.valueOf(options.playMeasuresInLoopEnd + 1));
+    }
+
     /** Create the SheetMusic view with the given options */
     private void createSheetMusic(MidiOptions options) {
         if (sheet != null) {
@@ -368,6 +374,9 @@ public class SheetMusicActivity extends MidiHandlingActivity {
      *  Page Up        - Previous measure
      *  Page Down      - Next measure
      *  R              - Restart
+     *  S              - Set loop start to current measure
+     *  E              - Set loop end to current measure
+     *  L              - Toggle loop on/off
      *  + / = / Numpad + - Speed up 10%
      *  - / Numpad -   - Speed down 10%
      *
@@ -390,6 +399,9 @@ public class SheetMusicActivity extends MidiHandlingActivity {
             case KeyEvent.KEYCODE_PAGE_UP:
             case KeyEvent.KEYCODE_PAGE_DOWN:
             case KeyEvent.KEYCODE_R:
+            case KeyEvent.KEYCODE_S:
+            case KeyEvent.KEYCODE_E:
+            case KeyEvent.KEYCODE_L:
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_NUMPAD_ADD:
             case KeyEvent.KEYCODE_EQUALS:
@@ -435,6 +447,18 @@ public class SheetMusicActivity extends MidiHandlingActivity {
                 return true;
             case KeyEvent.KEYCODE_R:
                 player.Reset();
+                return true;
+            case KeyEvent.KEYCODE_S:
+                player.SetLoopStart();
+                updateLoopBadges();
+                return true;
+            case KeyEvent.KEYCODE_E:
+                player.SetLoopEnd();
+                updateLoopBadges();
+                return true;
+            case KeyEvent.KEYCODE_L:
+                player.ToggleLoop();
+                switchLoopEnable.setChecked(options.playMeasuresInLoop);
                 return true;
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_NUMPAD_ADD:
