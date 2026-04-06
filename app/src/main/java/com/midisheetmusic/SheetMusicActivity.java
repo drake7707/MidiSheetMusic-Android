@@ -212,8 +212,10 @@ public class SheetMusicActivity extends MidiHandlingActivity {
             createSheetMusic(options);
         });
 
-        switchLoopEnable.setOnCheckedChangeListener((btn, checked) ->
-                options.playMeasuresInLoop = checked);
+        switchLoopEnable.setOnCheckedChangeListener((btn, checked) -> {
+            options.playMeasuresInLoop = checked;
+            if (sheet != null) sheet.invalBuffer();
+        });
 
         switchShowMeasures.setOnCheckedChangeListener((btn, checked) -> {
             options.showMeasures = checked;
@@ -280,6 +282,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
                         }
                         txtLoopEndBadge.setText(items[i]);
                     }
+                    if (sheet != null) sheet.invalBuffer();
                 })
                 .create();
         dialog.show();
@@ -451,14 +454,17 @@ public class SheetMusicActivity extends MidiHandlingActivity {
             case KeyEvent.KEYCODE_S:
                 player.SetLoopStart();
                 updateLoopBadges();
+                if (sheet != null) sheet.invalBuffer();
                 return true;
             case KeyEvent.KEYCODE_E:
                 player.SetLoopEnd();
                 updateLoopBadges();
+                if (sheet != null) sheet.invalBuffer();
                 return true;
             case KeyEvent.KEYCODE_L:
                 player.ToggleLoop();
                 switchLoopEnable.setChecked(options.playMeasuresInLoop);
+                if (sheet != null) sheet.invalBuffer();
                 return true;
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_NUMPAD_ADD:

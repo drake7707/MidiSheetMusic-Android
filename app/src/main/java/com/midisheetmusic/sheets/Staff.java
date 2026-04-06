@@ -54,6 +54,7 @@ public class Staff {
     private int starttime;              /** The time (in pulses) of first symbol */
     private int endtime;                /** The time (in pulses) of last symbol */
     private int measureLength;          /** The time (in pulses) of a measure */
+    private MidiOptions options;        /** The midi options (used for loop highlighting) */
 
     /** Create a new staff with the given list of music symbols,
      * and the given key signature.  The clef is determined by
@@ -90,6 +91,7 @@ public class Staff {
         clefsym = new ClefSymbol(clef, 0, false);
         keys = key.GetSymbols(clef);
         this.symbols = symbols;
+        this.options = options;
         CalculateWidth(options.scrollVert);
         CalculateHeight();
         CalculateStartEndTime();
@@ -316,6 +318,58 @@ public class Staff {
     }
 
 
+    /** Draw a semi-transparent red background rectangle over the measures that fall
+     *  within the configured loop range, when loop is enabled.  Drawing this first
+     *  ensures all notes and staff lines are rendered on top of the tint.
+     */
+    private void DrawLoopHighlight(Canvas canvas, Paint paint) {
+        if (!options.playMeasuresInLoop) return;
+
+        int loopStartTime = options.playMeasuresInLoopStart * measureLength;
+        int loopEndTime   = (options.playMeasuresInLoopEnd + 1) * measureLength;
+
+        /* Quick check: does the loop range overlap this staff at all? */
+        if (loopEndTime <= starttime || loopStartTime > endtime) return;
+
+        /* Scan symbols to find the pixel x-positions of the loop start and end. */
+        int xpos = keysigWidth;
+        int loopStartX = -1;
+        int loopEndX   = -1;
+        for (MusicSymbol s : symbols) {
+            if (s instanceof BarSymbol) {
+                int t = s.getStartTime();
+                if (t == loopStartTime) loopStartX = xpos + SheetMusic.NoteWidth / 2;
+                if (t == loopEndTime)   loopEndX   = xpos + SheetMusic.NoteWidth / 2;
+            }
+            xpos += s.getWidth();
+        }
+
+        /* Fallback: loop starts before (or at) this staff → use the staff's left edge */
+        if (loopStartX < 0 && loopStartTime <= starttime) {
+            loopStartX = SheetMusic.LeftMargin;
+        }
+        /* Fallback: loop ends beyond this staff → use the staff's right edge */
+        if (loopEndX < 0 && loopEndTime > endtime) {
+            loopEndX = width - 1;
+        }
+
+        if (loopStartX < 0 || loopEndX < 0) return;
+
+        /* Vertical extent matches DrawEndLines */
+        int ystart = (tracknum == 0) ? ytop - SheetMusic.LineWidth : 0;
+        int yend   = (tracknum == totaltracks - 1) ? ytop + 4 * SheetMusic.NoteHeight : height;
+
+        Paint.Style savedStyle = paint.getStyle();
+        int savedColor = paint.getColor();
+
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.argb(51, 255, 0, 0));  /* red at ~20% opacity */
+        canvas.drawRect(loopStartX, ystart, loopEndX, yend, paint);
+
+        paint.setStyle(savedStyle);
+        paint.setColor(savedColor);
+    }
+
     /** Draw the five horizontal lines of the staff */
     private void DrawHorizLines(Canvas canvas, Paint paint) {
         int line = 1;
@@ -359,6 +413,10 @@ public class Staff {
     /** Draw this staff. Only draw the symbols inside the clip area */
     public void Draw(Canvas canvas, Rect clip, Paint paint) {
         paint.setColor(Color.BLACK);
+
+        /* Draw the semi-transparent loop region tint first so everything renders on top */
+        DrawLoopHighlight(canvas, paint);
+
         int xpos = SheetMusic.LeftMargin + 5;
 
         /* Draw the left side Clef symbol */
