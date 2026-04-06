@@ -25,6 +25,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -436,6 +437,14 @@ public class MidiPlayer extends LinearLayout {
         options.tempo = (int)(1.0 / inverse_tempo_scaled);
         pulsesPerMsec = midifile.getTime().getQuarter() * (1000.0 / options.tempo);
 
+        Log.d("MidiDebug", "CreateMidiFile:"
+            + " pauseTime=" + options.pauseTime
+            + " tempo=" + options.tempo
+            + " pulsesPerMsec=" + pulsesPerMsec
+            + " quarter=" + midifile.getTime().getQuarter()
+            + " rawTempo=" + midifile.getTime().getTempo()
+            + " speed=" + speedBar.getProgress());
+
         try {
             FileOutputStream dest = activity.openFileOutput(tempSoundFile, Context.MODE_PRIVATE);
             midifile.ChangeSound(dest, options);
@@ -593,6 +602,13 @@ public class MidiPlayer extends LinearLayout {
             }
             startPulseTime = currentPulseTime;
             options.pauseTime = (int)(currentPulseTime - options.shifttime);
+            Log.d("MidiDebug", "DoPlay branch=LOOP"
+                + " playstate=" + playstate
+                + " currentPulseTime=" + currentPulseTime
+                + " startPulseTime=" + startPulseTime
+                + " pauseTime=" + options.pauseTime
+                + " shifttime=" + options.shifttime
+                + " countInMeasures=" + options.countInMeasures);
         }
         else if (playstate == paused) {
             TimeSignature timesig = (options.time != null) ? options.time : midifile.getTime();
@@ -608,6 +624,14 @@ public class MidiPlayer extends LinearLayout {
                 startPulseTime = currentPulseTime;
                 options.pauseTime = (int)(currentPulseTime - options.shifttime);
             }
+            Log.d("MidiDebug", "DoPlay branch=PAUSED"
+                + " playstate=" + playstate
+                + " currentPulseTime=" + currentPulseTime
+                + " startPulseTime=" + startPulseTime
+                + " pauseTime=" + options.pauseTime
+                + " shifttime=" + options.shifttime
+                + " countInMeasures=" + options.countInMeasures
+                + " countInPulses=" + countInPulses);
         }
         else {
             options.pauseTime = 0;
@@ -616,6 +640,14 @@ public class MidiPlayer extends LinearLayout {
             startPulseTime = options.shifttime - countInPulses;
             currentPulseTime = options.shifttime - countInPulses;
             prevPulseTime = options.shifttime - countInPulses - midifile.getTime().getQuarter();
+            Log.d("MidiDebug", "DoPlay branch=STOPPED"
+                + " playstate=" + playstate
+                + " currentPulseTime=" + currentPulseTime
+                + " startPulseTime=" + startPulseTime
+                + " pauseTime=" + options.pauseTime
+                + " shifttime=" + options.shifttime
+                + " countInMeasures=" + options.countInMeasures
+                + " countInPulses=" + countInPulses);
         }
 
         CreateMidiFile();

@@ -633,16 +633,27 @@ public class MidiFile {
         CheckStartTimes(tracks);
 
         /* Determine the time signature */
-        int tempoCount = 0;
         long tempo = 0;
+        boolean foundMidSongTempo = false;
         int numer = 0;
         int denom = 0;
         for (ArrayList<MidiEvent> list : allevents) {
             for (MidiEvent mevent : list) {
                 if (mevent.Metaevent == MetaEventTempo) {
-                    // Take average of all tempos
-                    tempo += mevent.Tempo;
-                    tempoCount++;
+                    /* Use the last tempo event at tick 0 as the initial tempo.
+                     * Multiple tempo events at tick 0 (e.g. a default followed by
+                     * the actual tempo) are common in some MIDI files; the last one
+                     * wins and is the tempo that will actually be in effect when the
+                     * song starts playing.
+                     */
+                    if (mevent.StartTime == 0) {
+                        tempo = mevent.Tempo;
+                    } else if (!foundMidSongTempo) {
+                        /* No tick-0 tempo found yet; fall back to the first mid-song
+                         * tempo event so we have something reasonable. */
+                        tempo = mevent.Tempo;
+                        foundMidSongTempo = true;
+                    }
                 }
                 if (mevent.Metaevent == MetaEventTimeSignature && numer == 0) {
                     numer = mevent.Numerator;
@@ -652,9 +663,6 @@ public class MidiFile {
         }
         if (tempo == 0) {
             tempo = 500000; /* 500,000 microseconds = 0.05 sec */
-        }
-        else {
-            tempo = tempo / tempoCount;
         }
         if (numer == 0) {
             numer = 4; denom = 4;
@@ -1060,6 +1068,26 @@ public class MidiFile {
     }
 
 
+    /** Search the events for a ProgramChange event with the same channel.
+     *  If a matching event is found, update the instrument.  Else, add a
+     *  new ProgramChange event.  This mirrors UpdateControlChange so that
+     *  only the most-recent program-change per channel is retained when
+     *  restoring state for a seek operation.
+     *  Precondition: changeEvent.EventFlag == EventProgramChange.
+     */
+    private static void
+    UpdateProgramChange(ArrayList<MidiEvent> newevents, MidiEvent changeEvent) {
+        for (MidiEvent mevent : newevents) {
+            if ((mevent.EventFlag == EventProgramChange) &&
+                (mevent.Channel == changeEvent.Channel)) {
+
+                mevent.Instrument = changeEvent.Instrument;
+                return;
+            }
+        }
+        newevents.add(changeEvent);
+    }
+
     /** Start the Midi music at the given pause time (in pulses).
      *  Remove any NoteOn/NoteOff events that occur before the pause time.
      *  For other events, change the delta-time to 0 if they occur
@@ -1067,6 +1095,7 @@ public class MidiFile {
      */
     private static 
     ArrayList<ArrayList<MidiEvent>> StartAtPauseTime(ArrayList<ArrayList<MidiEvent>> list, int pauseTime) {
+        Log.d("MidiDebug", "StartAtPauseTime: pauseTime=" + pauseTime + " numTracks=" + list.size());
         ArrayList<ArrayList<MidiEvent>> newlist = new ArrayList<ArrayList<MidiEvent>>(list.size());
         for (int tracknum = 0; tracknum < list.size(); tracknum++) {
             ArrayList<MidiEvent> events = list.get(tracknum);
@@ -1082,9 +1111,24 @@ public class MidiFile {
 
                         /* Skip NoteOn/NoteOff event */
                     }
+                    else if (mevent.EventFlag == SysexEvent1 ||
+                             mevent.EventFlag == SysexEvent2) {
+
+                        /* Skip SysEx events (e.g. GM/GS/XG Reset) that occur before
+                         * the seek point.  These are typically one-time initialisation
+                         * messages sent at the very start of the file.  Re-sending them
+                         * when seeking would reset all channels to their default state
+                         * (piano, no effects) AFTER the Program Change and Control Change
+                         * events we have already restored, undoing that restoration.
+                         */
+                    }
                     else if (mevent.EventFlag == EventControlChange) {
                         mevent.DeltaTime = 0;
                         UpdateControlChange(newevents, mevent);
+                    }
+                    else if (mevent.EventFlag == EventProgramChange) {
+                        mevent.DeltaTime = 0;
+                        UpdateProgramChange(newevents, mevent);
                     }
                     else {
                         mevent.DeltaTime = 0;
@@ -1164,30 +1208,96 @@ public class MidiFile {
             }
         }
 
-        ArrayList<ArrayList<MidiEvent>> newevents = CloneMidiEvents(allevents);
+        /* Build each output track from scratch using only the events we need.
+         * This avoids inheriting unexpected events from the source file (e.g.
+         * SysEx GM Reset, stale Program Change delta times) that can cause
+         * Android's synthesizer to behave unexpectedly.
+         *
+         * Each output track contains:
+         *   1. A SetTempo MetaEvent at tick 0.
+         *   2. A ProgramChange at tick 0 (for tracks that carry a MIDI channel).
+         *   3. NoteOn / NoteOff events with transpose and volume applied and
+         *      delta times recalculated from the preserved StartTime values.
+         *   4. An EndOfTrack MetaEvent.
+         */
+        ArrayList<ArrayList<MidiEvent>> newevents = new ArrayList<>(num_tracks);
+        for (int tracknum = 0; tracknum < num_tracks; tracknum++) {
+            ArrayList<MidiEvent> original = allevents.get(tracknum);
+            ArrayList<MidiEvent> filtered = new ArrayList<>();
 
-        /* Set the tempo at the beginning of each track */
-        for (int tracknum = 0; tracknum < newevents.size(); tracknum++) {
-            MidiEvent mevent = CreateTempoEvent(options.tempo);
-            newevents.get(tracknum).add(0, mevent);
-        }
-
-        /* Change the note number (transpose), instrument, tempo, and volume */
-        for (int tracknum = 0; tracknum < newevents.size(); tracknum++) {
-            int vol = trackVolume[tracknum];
-            for (MidiEvent mevent : newevents.get(tracknum)) {
-                int num = mevent.Notenumber + options.transpose;
-                if (num < 0)
-                    num = 0;
-                if (num > 127)
-                    num = 127;
-                mevent.Notenumber = (byte)num;
-                if (!options.useDefaultInstruments) {
-                    mevent.Instrument = (byte)instruments[tracknum];
+            /* Scan the source track to find the channel, original instrument,
+             * and the end-of-track event. */
+            byte channel = -1;
+            byte origInstrument = 0;
+            boolean foundPC = false;
+            MidiEvent endOfTrackEvent = null;
+            for (MidiEvent e : original) {
+                if (channel < 0 &&
+                        (e.EventFlag == EventNoteOn || e.EventFlag == EventNoteOff ||
+                         e.EventFlag == EventProgramChange || e.EventFlag == EventControlChange)) {
+                    channel = e.Channel;
                 }
-                mevent.Velocity = (byte) Math.min(127, ((mevent.Velocity & 0xFF) * vol) / 100);
-                mevent.Tempo = options.tempo;
+                if (!foundPC && e.EventFlag == EventProgramChange) {
+                    origInstrument = e.Instrument;
+                    foundPC = true;
+                }
+                if (e.EventFlag == MetaEvent && e.Metaevent == MetaEventEndOfTrack) {
+                    endOfTrackEvent = e;
+                }
             }
+            filtered.add(CreateTempoEvent(options.tempo));
+
+            /* 2. Inject a ProgramChange at tick 0 for any track that has a channel,
+             *    using the instrument from options (or the original if useDefaultInstruments). */
+            if (channel >= 0) {
+                byte instrument = options.useDefaultInstruments
+                        ? origInstrument
+                        : (byte) instruments[tracknum];
+                MidiEvent pc = new MidiEvent();
+                pc.DeltaTime = 0;
+                pc.StartTime = 0;
+                pc.HasEventflag = true;
+                pc.EventFlag = EventProgramChange;
+                pc.Channel = channel;
+                pc.Instrument = instrument;
+                filtered.add(pc);
+            }
+
+            /* 3. Copy only NoteOn/NoteOff events, applying transpose and volume,
+             *    and recalculating delta times from the preserved StartTime values. */
+            int vol = trackVolume[tracknum];
+            int prevST = 0;
+            for (MidiEvent e : original) {
+                if (e.EventFlag != EventNoteOn && e.EventFlag != EventNoteOff) {
+                    continue;
+                }
+                if (!keeptracks[tracknum]) {
+                    continue;
+                }
+                MidiEvent copy = e.Clone();
+                int num = (copy.Notenumber & 0xFF) + options.transpose;
+                if (num < 0) num = 0;
+                if (num > 127) num = 127;
+                copy.Notenumber = (byte) num;
+                copy.Velocity = (byte) Math.min(127, ((copy.Velocity & 0xFF) * vol) / 100);
+                copy.DeltaTime = copy.StartTime - prevST;
+                prevST = copy.StartTime;
+                filtered.add(copy);
+            }
+
+            /* 4. Append an EndOfTrack marker. */
+            MidiEvent eot = new MidiEvent();
+            eot.DeltaTime = (endOfTrackEvent != null)
+                    ? Math.max(0, endOfTrackEvent.StartTime - prevST) : 0;
+            eot.StartTime = (endOfTrackEvent != null) ? endOfTrackEvent.StartTime : prevST;
+            eot.HasEventflag = true;
+            eot.EventFlag = MetaEvent;
+            eot.Metaevent = MetaEventEndOfTrack;
+            eot.Metalength = 0;
+            eot.Value = new byte[0];
+            filtered.add(eot);
+
+            newevents.add(filtered);
         }
 
         if (options.pauseTime != 0) {
@@ -1254,35 +1364,83 @@ public class MidiFile {
             }
         }
         
-        ArrayList<ArrayList<MidiEvent>> newevents = CloneMidiEvents(allevents);
+        /* Build each output track from scratch (same whitelist approach as
+         * ApplyOptionsToEvents) to avoid inheriting unexpected source events. */
+        ArrayList<ArrayList<MidiEvent>> newevents = new ArrayList<>(allevents.size());
+        for (int tracknum = 0; tracknum < allevents.size(); tracknum++) {
+            ArrayList<MidiEvent> original = allevents.get(tracknum);
+            ArrayList<MidiEvent> filtered = new ArrayList<>();
 
-        /* Set the tempo at the beginning of each track */
-        for (int tracknum = 0; tracknum < newevents.size(); tracknum++) {
-            MidiEvent mevent = CreateTempoEvent(options.tempo);
-            newevents.get(tracknum).add(0, mevent);
-        }
-
-        /* Change the note number (transpose), instrument, and tempo */
-        for (int tracknum = 0; tracknum < newevents.size(); tracknum++) {
-            for (MidiEvent mevent : newevents.get(tracknum)) {
-                int num = mevent.Notenumber + options.transpose;
-                if (num < 0)
-                    num = 0;
-                if (num > 127)
-                    num = 127;
-                mevent.Notenumber = (byte)num;
-                if (!keepchannel[mevent.Channel]) {
-                    mevent.Velocity = 0;
-                } else {
-                    int vol = channelVolume[mevent.Channel];
-                    mevent.Velocity = (byte) Math.min(127, ((mevent.Velocity & 0xFF) * vol) / 100);
+            byte trackChannel = -1;
+            byte origInstrument = 0;
+            boolean foundPC = false;
+            MidiEvent endOfTrackEvent = null;
+            for (MidiEvent e : original) {
+                if (trackChannel < 0 &&
+                        (e.EventFlag == EventNoteOn || e.EventFlag == EventNoteOff ||
+                         e.EventFlag == EventProgramChange || e.EventFlag == EventControlChange)) {
+                    trackChannel = e.Channel;
                 }
-                if (!options.useDefaultInstruments) {
-                    mevent.Instrument = (byte)instruments[mevent.Channel];
+                if (!foundPC && e.EventFlag == EventProgramChange) {
+                    origInstrument = e.Instrument;
+                    foundPC = true;
                 }
-                mevent.Tempo = options.tempo;
+                if (e.EventFlag == MetaEvent && e.Metaevent == MetaEventEndOfTrack) {
+                    endOfTrackEvent = e;
+                }
             }
+
+            filtered.add(CreateTempoEvent(options.tempo));
+
+            if (trackChannel >= 0) {
+                byte instrument = options.useDefaultInstruments
+                        ? origInstrument
+                        : (byte) instruments[trackChannel];
+                MidiEvent pc = new MidiEvent();
+                pc.DeltaTime = 0;
+                pc.StartTime = 0;
+                pc.HasEventflag = true;
+                pc.EventFlag = EventProgramChange;
+                pc.Channel = trackChannel;
+                pc.Instrument = instrument;
+                filtered.add(pc);
+            }
+
+            int vol = (trackChannel >= 0) ? channelVolume[trackChannel] : 100;
+            boolean keep = (trackChannel < 0) || keepchannel[trackChannel];
+            int prevST = 0;
+            for (MidiEvent e : original) {
+                if (e.EventFlag != EventNoteOn && e.EventFlag != EventNoteOff) {
+                    continue;
+                }
+                if (!keep) {
+                    continue;
+                }
+                MidiEvent copy = e.Clone();
+                int num = (copy.Notenumber & 0xFF) + options.transpose;
+                if (num < 0) num = 0;
+                if (num > 127) num = 127;
+                copy.Notenumber = (byte) num;
+                copy.Velocity = (byte) Math.min(127, ((copy.Velocity & 0xFF) * vol) / 100);
+                copy.DeltaTime = copy.StartTime - prevST;
+                prevST = copy.StartTime;
+                filtered.add(copy);
+            }
+
+            MidiEvent eot = new MidiEvent();
+            eot.DeltaTime = (endOfTrackEvent != null)
+                    ? Math.max(0, endOfTrackEvent.StartTime - prevST) : 0;
+            eot.StartTime = (endOfTrackEvent != null) ? endOfTrackEvent.StartTime : prevST;
+            eot.HasEventflag = true;
+            eot.EventFlag = MetaEvent;
+            eot.Metaevent = MetaEventEndOfTrack;
+            eot.Metalength = 0;
+            eot.Value = new byte[0];
+            filtered.add(eot);
+
+            newevents.add(filtered);
         }
+
         if (options.pauseTime != 0) {
             newevents = StartAtPauseTime(newevents, options.pauseTime);
         }
