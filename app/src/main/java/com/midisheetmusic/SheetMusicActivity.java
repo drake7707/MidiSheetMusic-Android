@@ -459,6 +459,8 @@ public class SheetMusicActivity extends MidiHandlingActivity {
                 return true;
             case KeyEvent.KEYCODE_E:
                 player.SetLoopEnd();
+                options.playMeasuresInLoop = true;
+                switchLoopEnable.setChecked(options.playMeasuresInLoop);
                 updateLoopBadges();
                 if (sheet != null) sheet.invalBuffer();
                 player.reshadeSheet();

@@ -18,7 +18,7 @@ import android.graphics.*;
 import com.midisheetmusic.KeySignature;
 import com.midisheetmusic.MidiOptions;
 import com.midisheetmusic.SheetMusic;
-
+import android.util.Log;
 
 /* @class Staff
  * The Staff is used to draw a single Staff (a row of measures) in the 
@@ -352,7 +352,7 @@ public class Staff {
             loopStartX = SheetMusic.LeftMargin;
         }
         /* Fallback: loop ends beyond this staff → use the staff's right edge */
-        if (loopEndX < 0 && loopEndTime > endtime) {
+        if (loopEndX < 0 && loopEndTime >= endtime) {
             loopEndX = width - 1;
         }
 

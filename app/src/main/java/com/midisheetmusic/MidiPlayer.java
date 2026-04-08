@@ -535,6 +535,7 @@ public class MidiPlayer extends LinearLayout {
         this.setVisibility(View.GONE);
         RemoveShading();
         timer.removeCallbacks(TimerCallback);
+        doplayFromLoopEnd = false;
         timer.postDelayed(DoPlay, 0);
     }
 
@@ -586,12 +587,14 @@ public class MidiPlayer extends LinearLayout {
         }
     };
 
+    // Flag whether the do play was called from a loop end or not
+    private boolean doplayFromLoopEnd = false;
     Runnable DoPlay = new Runnable() {
       public void run() {
         /* The startPulseTime is the pulse time of the midi file when
          * we first start playing the music.  It's used during shading.
          */
-        if (options.playMeasuresInLoop) {
+        if (options.playMeasuresInLoop && doplayFromLoopEnd) {
             /* If we're playing measures in a loop, make sure the
              * currentPulseTime is somewhere inside the loop measures.
              */
@@ -654,7 +657,7 @@ public class MidiPlayer extends LinearLayout {
         CreateMidiFile();
         playstate = playing;
 
-        if (options.countInMeasures > 0 && options.pauseTime == 0) {
+        if (options.countInMeasures > 0 && options.pauseTime == 0 && !doplayFromLoopEnd) {
             /* Delay MIDI start by the count-in duration; play audible click beats. */
             TimeSignature ts = (options.time != null) ? options.time : midifile.getTime();
             countInBeatsPerMeasure = ts.getNumerator();
@@ -1071,6 +1074,7 @@ public class MidiPlayer extends LinearLayout {
         currentPulseTime = 0;
         prevPulseTime = -1;
         StopSound();
+        doplayFromLoopEnd = true;
         timer.postDelayed(DoPlay, 0);
     }
 
