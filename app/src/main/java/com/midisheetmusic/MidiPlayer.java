@@ -595,10 +595,11 @@ public class MidiPlayer extends LinearLayout {
             /* If we're playing measures in a loop, make sure the
              * currentPulseTime is somewhere inside the loop measures.
              */
-            int measure = (int)(currentPulseTime / midifile.getTime().getMeasure());
+            TimeSignature loopTimesig = (options.time != null) ? options.time : midifile.getTime();
+            int measure = (int)(currentPulseTime / loopTimesig.getMeasure());
             if ((measure < options.playMeasuresInLoopStart) ||
                 (measure > options.playMeasuresInLoopEnd)) {
-                currentPulseTime = options.playMeasuresInLoopStart * midifile.getTime().getMeasure();
+                currentPulseTime = options.playMeasuresInLoopStart * loopTimesig.getMeasure();
             }
             startPulseTime = currentPulseTime;
             options.pauseTime = (int)(currentPulseTime - options.shifttime);
@@ -755,8 +756,9 @@ public class MidiPlayer extends LinearLayout {
      * Scroll to the beginning of the sheet or to options.playMeasuresInLoopStart if enabled
      */
     void ScrollToStart() {
+        TimeSignature scrollTimesig = (options.time != null) ? options.time : midifile.getTime();
         startPulseTime = options.playMeasuresInLoop ?
-                options.playMeasuresInLoopStart * midifile.getTime().getMeasure(): 0;
+                options.playMeasuresInLoopStart * scrollTimesig.getMeasure(): 0;
         currentPulseTime = startPulseTime;
         prevPulseTime = -10;
         sheet.ShadeNotes((int)currentPulseTime, (int)prevPulseTime, SheetMusic.ImmediateScroll);
@@ -781,8 +783,15 @@ public class MidiPlayer extends LinearLayout {
         sheet.ShadeNotes(-10, (int)currentPulseTime, SheetMusic.DontScroll);
         piano.ShadeNotes(-10, (int)currentPulseTime);
 
-        prevPulseTime = currentPulseTime; 
-        currentPulseTime -= midifile.getTime().getMeasure();
+        prevPulseTime = currentPulseTime;
+        TimeSignature rewindTimesig = (options.time != null) ? options.time : midifile.getTime();
+        int measureLen = rewindTimesig.getMeasure();
+        int currentMeasure = (int)(currentPulseTime / measureLen);
+        // If at or before the start of the current measure, go to the previous measure
+        if (currentPulseTime <= currentMeasure * measureLen) {
+            currentMeasure = Math.max(0, currentMeasure - 1);
+        }
+        currentPulseTime = currentMeasure * measureLen;
         if (currentPulseTime < 0) {
             currentPulseTime = 0;
             prevPulseTime = -10;
@@ -813,10 +822,13 @@ public class MidiPlayer extends LinearLayout {
         sheet.ShadeNotes(-10, (int)currentPulseTime, SheetMusic.DontScroll);
         piano.ShadeNotes(-10, (int)currentPulseTime);
    
-        prevPulseTime = currentPulseTime; 
-        currentPulseTime += midifile.getTime().getMeasure();
-        if (currentPulseTime > midifile.getTotalPulses()) {
-            currentPulseTime -= midifile.getTime().getMeasure();
+        prevPulseTime = currentPulseTime;
+        TimeSignature fwdTimesig = (options.time != null) ? options.time : midifile.getTime();
+        int fwdMeasureLen = fwdTimesig.getMeasure();
+        int fwdMeasure = (int)(currentPulseTime / fwdMeasureLen);
+        int newPulseTime = (fwdMeasure + 1) * fwdMeasureLen;
+        if (newPulseTime <= midifile.getTotalPulses()) {
+            currentPulseTime = newPulseTime;
         }
         sheet.ShadeNotes((int)currentPulseTime, (int)prevPulseTime, SheetMusic.ImmediateScroll);
         piano.ShadeNotes((int)currentPulseTime, (int)prevPulseTime);
@@ -1016,7 +1028,8 @@ public class MidiPlayer extends LinearLayout {
             /* If we're playing in a loop, stop and restart */
             if (options.playMeasuresInLoop) {
                 double nearEndTime = currentPulseTime + pulsesPerMsec*10;
-                int measure = (int)(nearEndTime / midifile.getTime().getMeasure());
+                TimeSignature loopTimesig = (options.time != null) ? options.time : midifile.getTime();
+                int measure = (int)(nearEndTime / loopTimesig.getMeasure());
                 if (measure > options.playMeasuresInLoopEnd) {
                     RestartPlayMeasuresInLoop();
                     return;
@@ -1067,6 +1080,9 @@ public class MidiPlayer extends LinearLayout {
             return 0;
         }
         double measureLen = midifile.getTime().getMeasure();
+        if (options.time != null) {
+            measureLen = options.time.getMeasure();
+        }
         if (measureLen <= 0) {
             return 0;
         }
