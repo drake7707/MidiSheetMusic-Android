@@ -594,7 +594,7 @@ public class MidiPlayer extends LinearLayout {
         /* The startPulseTime is the pulse time of the midi file when
          * we first start playing the music.  It's used during shading.
          */
-        if (options.playMeasuresInLoop && doplayFromLoopEnd) {
+        if (options.playMeasuresInLoop) {
             /* If we're playing measures in a loop, make sure the
              * currentPulseTime is somewhere inside the loop measures.
              */
@@ -606,6 +606,16 @@ public class MidiPlayer extends LinearLayout {
             }
             startPulseTime = currentPulseTime;
             options.pauseTime = (int)(currentPulseTime - options.shifttime);
+
+            // if it's not started from a loop end, make sure to add the count in as well if the loop starts at measure 1
+            if(!doplayFromLoopEnd && currentPulseTime <= options.shifttime) {
+                TimeSignature timesig = (options.time != null) ? options.time : midifile.getTime();
+                int countInPulses = options.countInMeasures * timesig.getMeasure();
+                startPulseTime = options.shifttime - countInPulses;
+                currentPulseTime = options.shifttime - countInPulses;
+                prevPulseTime = options.shifttime - countInPulses - midifile.getTime().getQuarter();
+            }
+
             Log.d("MidiDebug", "DoPlay branch=LOOP"
                 + " playstate=" + playstate
                 + " currentPulseTime=" + currentPulseTime
