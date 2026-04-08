@@ -1114,6 +1114,15 @@ public class MidiPlayer extends LinearLayout {
         options.playMeasuresInLoop = !options.playMeasuresInLoop;
     }
 
+    /**
+     * Re-apply cursor shading at the current playback position, without scrolling.
+     * Call this after invalBuffer() to restore the cursor that the buffer reset erased.
+     */
+    public void reshadeSheet() {
+        if (sheet == null) return;
+        sheet.ShadeNotes((int) currentPulseTime, (int) prevPulseTime, SheetMusic.DontScroll);
+    }
+
     public boolean isInMidiMode() {
         return playstate == midi;
     }

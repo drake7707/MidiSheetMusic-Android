@@ -1041,9 +1041,12 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
 
     /** Invalidate the drawing buffer so the sheet is fully redrawn on the next draw call.
      *  Call this whenever options that affect the visual appearance (e.g. loop range) change.
+     *  Both bufferBitmap and bufferCanvas are nulled so that ShadeNotes() (which checks
+     *  bufferCanvas == null) will also recreate the buffer on its next call.
      */
     public void invalBuffer() {
         bufferBitmap = null;
+        bufferCanvas = null;
         draw();
     }
 
