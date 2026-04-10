@@ -1,0 +1,30 @@
+Categories:
+  - Music & Audio
+
+License: GPL-2.0-only
+
+AuthorName: drake7707
+SourceCode: https://github.com/drake7707/MidiSheetMusic-Android
+IssueTracker: https://github.com/drake7707/MidiSheetMusic-Android/issues
+
+AutoName: Enhanced MidiSheetMusic
+
+# Description is read from fastlane/metadata/android/en-US/full_description.txt
+
+RepoType: git
+Repo: https://github.com/drake7707/MidiSheetMusic-Android
+
+Builds:
+  - versionName: '2.6'
+    versionCode: 9
+    # Release tags follow the format v1.0.YYYYMMDD (date-based).
+    # v1.0.20260504 is the tag for versionCode 9 / versionName 2.6.
+    commit: v1.0.20260504
+    subdir: app
+    gradle:
+      - yes
+
+AutoUpdateMode: Version %v
+UpdateCheckMode: Tags ^v1\.0\.[0-9]+$
+CurrentVersion: '2.6'
+CurrentVersionCode: 9
