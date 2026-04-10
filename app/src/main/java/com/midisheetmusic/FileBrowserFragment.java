@@ -87,7 +87,7 @@ public class FileBrowserFragment extends Fragment {
                     if (file.isDirectory()) {
                         Uri uri = Uri.parse("file://" + file.getAbsolutePath() + "/");
                         sortedDirs.add(new FileUri(uri, file.getName()));
-                    } else if (filename.endsWith(".mid") || filename.endsWith(".midi")) {
+                    } else if (filename.endsWith(".mid") || filename.endsWith(".midi") || filename.endsWith(".smf")) {
                         Uri uri = Uri.parse("file://" + file.getAbsolutePath());
                         sortedFiles.add(new FileUri(uri, uri.getLastPathSegment()));
                     }

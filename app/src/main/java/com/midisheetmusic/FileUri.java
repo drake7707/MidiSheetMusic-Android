@@ -47,7 +47,8 @@ public class FileUri implements Comparator<FileUri> {
                 .replace("__", ": ")
                 .replace("_", " ")
                 .replace(".mid", "")
-                .replace(".midi", "");
+                .replace(".midi", "")
+                .replace(".smf", "");
     }
 
     @Override
