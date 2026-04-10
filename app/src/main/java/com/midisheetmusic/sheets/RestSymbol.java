@@ -16,6 +16,7 @@ import android.graphics.*;
 
 import com.midisheetmusic.NoteDuration;
 import com.midisheetmusic.SheetMusic;
+import com.midisheetmusic.TimeSignature;
 
 
 /* @class RestSymbol
@@ -39,6 +40,8 @@ public class RestSymbol implements MusicSymbol {
      * This is used to determine the measure this symbol belongs to.
      */
     public int getStartTime() { return starttime; }
+
+    public int getEndTime(TimeSignature sig) { return getStartTime() + sig.DurationToTime(duration); }
 
     /** Get/Set the width (in pixels) of this symbol. The width is set
      * in SheetMusic.AlignSymbols() to vertically align symbols.

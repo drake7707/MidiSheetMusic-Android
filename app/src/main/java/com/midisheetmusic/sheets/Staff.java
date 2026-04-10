@@ -18,6 +18,8 @@ import android.graphics.*;
 import com.midisheetmusic.KeySignature;
 import com.midisheetmusic.MidiOptions;
 import com.midisheetmusic.SheetMusic;
+import com.midisheetmusic.TimeSignature;
+
 import android.util.Log;
 
 /* @class Staff
@@ -479,12 +481,22 @@ public class Staff {
 
     }
 
-    public MusicSymbol getCurrentNote(int currentPulseTime) {
+    public MusicSymbol getCurrentNote(int currentPulseTime, TimeSignature sig) {
         for (int i = 0; i < symbols.size(); ++i) {
             MusicSymbol cur = symbols.get(i);
-            if (cur instanceof ChordSymbol) {
+            if (cur instanceof ChordSymbol || cur instanceof RestSymbol) {
                 if (cur.getStartTime() >= currentPulseTime) {
-                    return cur;
+                    int endTime = cur instanceof ChordSymbol ? ((ChordSymbol) cur).getEndTime() : ((RestSymbol) cur).getEndTime(sig);
+                    if(currentPulseTime > endTime) {
+                        // it's after the end time of this note
+                        // find the next chord or rest symbol
+                        for(int j = i; j < symbols.size(); j++) {
+                            if(symbols.get(j) instanceof ChordSymbol || symbols.get(j) instanceof  RestSymbol)
+                                return symbols.get(j);
+                        }
+                    }
+                    else
+                        return cur;
                 }
             }
         }
@@ -498,7 +510,7 @@ public class Staff {
         MusicSymbol result = null;
         for (int i = 0; i < symbols.size(); ++i) {
             MusicSymbol cur = symbols.get(i);
-            if (cur instanceof ChordSymbol) {
+            if (cur instanceof ChordSymbol || cur instanceof RestSymbol) {
                 if (cur.getStartTime() < currentPulseTime) {
                     result = cur;
                 } else {
@@ -542,6 +554,7 @@ public class Staff {
 
             int start = curr.getStartTime();
             int end = 0;
+
             if (i+2 < symbols.size() && symbols.get(i+1) instanceof BarSymbol) {
                 end = symbols.get(i+2).getStartTime();
             }
@@ -554,7 +567,7 @@ public class Staff {
 
 
             /* If we've past the previous and current times, we're done. */
-            if ((start > prevPulseTime) && (start > currentPulseTime)) {
+            if (((start > prevPulseTime) && (start > currentPulseTime))) {
                 if (x_shade == 0) {
                     x_shade = xpos;
                 }
@@ -599,7 +612,7 @@ public class Staff {
             }
 
             /* If symbol is in the current time, draw a shaded background */
-            if ((start <= currentPulseTime) && (currentPulseTime < end)) {
+            if (((start <= currentPulseTime) && (currentPulseTime < end)) ) {
                 x_shade = xpos;
                 canvas.translate(xpos, 0);
                 paint.setStyle(Paint.Style.FILL);

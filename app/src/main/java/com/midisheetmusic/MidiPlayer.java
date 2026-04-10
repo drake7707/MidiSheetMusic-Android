@@ -191,17 +191,20 @@ public class MidiPlayer extends LinearLayout {
 
     void OnMidiNote(int note, boolean pressed) {
         if (!pressed) return;
-        MusicSymbol nextNote = this.sheet.getCurrentNote((int) currentPulseTime);
-        int midiNote = ((ChordSymbol) nextNote).getNotedata()[0].number;
-        note += options.midiShift;
-        if (midiNote != note) {
-            piano.UnShadeOneNote(prevWrongMidi);
-            piano.ShadeOneNote(note, Color.RED);
-            prevWrongMidi = note;
-        } else {
-            prevPulseTime = currentPulseTime;
-            currentPulseTime = sheet.getCurrentNote(nextNote.getStartTime() + 1).getStartTime();
-            piano.UnShadeOneNote(prevWrongMidi);
+        TimeSignature timesig = (options.time != null) ? options.time : midifile.getTime();
+        MusicSymbol nextNote = this.sheet.getCurrentNote((int) currentPulseTime, timesig);
+        if(nextNote instanceof ChordSymbol) {
+            int midiNote = ((ChordSymbol) nextNote).getNotedata()[0].number;
+            note += options.midiShift;
+            if (midiNote != note) {
+                piano.UnShadeOneNote(prevWrongMidi);
+                piano.ShadeOneNote(note, Color.RED);
+                prevWrongMidi = note;
+            } else {
+                prevPulseTime = currentPulseTime;
+                currentPulseTime = sheet.getCurrentNote(nextNote.getStartTime() + 1, timesig).getStartTime();
+                piano.UnShadeOneNote(prevWrongMidi);
+            }
         }
         sheet.ShadeNotes((int) currentPulseTime, (int) prevPulseTime, SheetMusic.ImmediateScroll);
         piano.ShadeNotes((int) currentPulseTime, (int) prevPulseTime);
@@ -801,9 +804,11 @@ public class MidiPlayer extends LinearLayout {
         int measureLen = rewindTimesig.getMeasure();
         int currentMeasure = (int)(currentPulseTime / measureLen);
         // If at or before the start of the current measure, go to the previous measure
-        if (currentPulseTime <= currentMeasure * measureLen) {
-            currentMeasure = Math.max(0, currentMeasure - 1);
-        }
+
+        MusicSymbol currNote = sheet.getCurrentNote((int)currentPulseTime, rewindTimesig);
+
+        currentMeasure = Math.max(0, currentMeasure - 1);
+
         currentPulseTime = currentMeasure * measureLen;
         if (currentPulseTime < 0) {
             currentPulseTime = 0;
@@ -812,6 +817,11 @@ public class MidiPlayer extends LinearLayout {
         else if (currentPulseTime < options.shifttime) {
             currentPulseTime = options.shifttime;
         }
+
+        TimeSignature timesig = (options.time != null) ? options.time : midifile.getTime();
+        currNote = sheet.getCurrentNote((int) currentPulseTime,timesig);
+        currentPulseTime = currNote.getStartTime(); // align with the start of the note
+
         sheet.ShadeNotes((int)currentPulseTime, (int)prevPulseTime, SheetMusic.ImmediateScroll);
         piano.ShadeNotes((int)currentPulseTime, (int)prevPulseTime);
     }
@@ -843,6 +853,11 @@ public class MidiPlayer extends LinearLayout {
         if (newPulseTime <= midifile.getTotalPulses()) {
             currentPulseTime = newPulseTime;
         }
+
+        TimeSignature timesig = (options.time != null) ? options.time : midifile.getTime();
+        MusicSymbol currNote = sheet.getCurrentNote((int) currentPulseTime,timesig);
+        currentPulseTime = currNote.getStartTime(); // align with the start of the note
+
         sheet.ShadeNotes((int)currentPulseTime, (int)prevPulseTime, SheetMusic.ImmediateScroll);
         piano.ShadeNotes((int)currentPulseTime, (int)prevPulseTime);
     }
@@ -872,8 +887,8 @@ public class MidiPlayer extends LinearLayout {
             Log.d("NoteNav", "NextNote: returning early — wrong playstate=" + playstate);
             return;
         }
-
-        MusicSymbol currentNote = sheet.getCurrentNote((int) currentPulseTime);
+        TimeSignature timesig = (options.time != null) ? options.time : midifile.getTime();
+        MusicSymbol currentNote = sheet.getCurrentNote((int) currentPulseTime, timesig);
         Log.d("NoteNav", "NextNote: currentNote=" + (currentNote != null ? currentNote.getStartTime() : "null"));
         if (currentNote == null) {
             return;
@@ -886,7 +901,7 @@ public class MidiPlayer extends LinearLayout {
             Log.d("NoteNav", "NextNote: snapping to boundary " + (int)newPulseTime);
         } else {
             // Already at a note boundary — advance to the next note
-            MusicSymbol nextNote = sheet.getCurrentNote(currentNote.getStartTime() + 1);
+            MusicSymbol nextNote = sheet.getCurrentNote(currentNote.getStartTime() + 1, timesig);
             if (nextNote == null) {
                 return;
             }
@@ -1003,7 +1018,8 @@ public class MidiPlayer extends LinearLayout {
         /* Snap to the exact start time of the chord at this position so that
          * the first arrow-key press after a click advances by one note rather
          * than merely landing on the chord boundary. */
-        MusicSymbol chord = sheet.getCurrentNote((int) currentPulseTime);
+        TimeSignature timesig = (options.time != null) ? options.time : midifile.getTime();
+        MusicSymbol chord = sheet.getCurrentNote((int) currentPulseTime, timesig);
         Log.d("NoteNav", "MoveToClicked: rawPulse=" + (int)currentPulseTime
                 + " chord=" + (chord != null ? chord.getStartTime() : "null"));
         if (chord != null) {

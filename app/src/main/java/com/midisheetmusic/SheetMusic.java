@@ -1547,12 +1547,21 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
         holder.removeCallback(this);
     }
 
-    public MusicSymbol getCurrentNote(int currentTime) {
+    public MusicSymbol getCurrentNote(int currentTime, TimeSignature sig) {
+
+        int firstStartTime = Integer.MAX_VALUE;
+        MusicSymbol firstNote = null;
+
         for (int i = 0; i < staffs.size(); ++i) {
-            MusicSymbol note = staffs.get(i).getCurrentNote(currentTime);
-            if (note != null) return note;
+            MusicSymbol note = staffs.get(i).getCurrentNote(currentTime, sig);
+            if (note != null) {
+                if(firstStartTime > note.getStartTime()) {
+                    firstStartTime = note.getStartTime();
+                    firstNote = note;
+                }
+            }
         }
-        return null;
+        return firstNote;
     }
 
     /** Return the last ChordSymbol whose start time is strictly before currentTime,
