@@ -88,10 +88,11 @@ public class MidiOptions implements Serializable {
             tracks[i] = true;
             mute[i] = false;
             volume[i] = 100;
-            if (midifile.getTracks().get(i).getInstrumentName().equals("Percussion")) {
+            // do not hide percussion by default
+          /*  if (midifile.getTracks().get(i).getInstrumentName().equals("Percussion")) {
                 tracks[i] = false;
                 mute[i] = true;
-            }
+            }*/
         }
         useDefaultInstruments = true;
         instruments = new int[num_tracks];
@@ -101,11 +102,11 @@ public class MidiOptions implements Serializable {
         trackOctaveShift = new int[num_tracks];
         scrollVert = false;
         largeNoteSize = true;
-        twoStaffs = tracks.length != 2;
+        twoStaffs = tracks.length == 1; // when there is only 1 track, split the piano track into 2 staffs, otherwise leave as is
         showNoteLetters = NoteNameNone;
-        showMeasures = false;
+        showMeasures = true;
         showLyrics = true;
-        showTrackLabels = false;
+        showTrackLabels = true;
         trackInstrumentNames = new String[num_tracks];
         for (int i = 0; i < num_tracks; i++) {
             int instr = midifile.getTracks().get(i).getInstrument();
