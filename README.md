@@ -42,6 +42,7 @@ MidiSheetMusic is a free and open-source Android app that helps you learn and pr
 10. [Bundled Songs](#bundled-songs)
 11. [License](#license)
 12. [Contributors](#contributors)
+13. [Changelog](CHANGELOG.md)
 
 ---
 
@@ -232,16 +233,23 @@ Source code is available at: https://github.com/drake7707/MidiSheetMusic-Android
 
 Improvements introduced in this fork include:
 
-- Updated to compile and run correctly on modern Android versions (Android 10 and above, up to Android 15).
-- Compact Track Options panel: each track's visibility, mute, instrument, and octave shift are all accessible from a single row, making it much faster to configure multi-track files.
-- Per-track octave shift (8va / 8vb) to adjust how notes are drawn on the staff without changing the playback pitch.
-- Count-in measures with audible beat clicks before playback begins, so you have time to get ready.
-- BPM display: the speed label now shows both the percentage and the resulting tempo in beats per minute, updating live as you adjust the slider.
-- Keyboard shortcuts for all major playback actions.
-- Bass clef and treble clef filter buttons (replacing the generic L/R labels) for clearer left/right hand selection.
-- Portrait mode support: the app previously locked the screen to landscape; it now works in both orientations.
-- Per track volume sliders, good for lowering the volume of backing tracks while keeping the track you want to play at full volume
-- Track labels, useful when many tracks are shown
+- **Android modernization** — updated to compile and run on Android 10–15 (API 30–35); removed legacy dependencies; fixed all compiler warnings.
+- **Portrait mode support** — the app previously locked the screen to landscape; it now works in both orientations, with correct resize and redraw on rotation.
+- **Compact Track Options panel** — each track's visibility, mute, instrument, octave shift, and volume are all accessible from a single inline row, making multi-track configuration much faster.
+- **Per-track octave shift (8va / 8vb)** — adjust how notes are drawn on the staff without changing the playback pitch.
+- **Per-track volume sliders** — lower the volume of a backing track while keeping your practice track at full volume; hide and mute are now separate controls.
+- **Count-in measures** — configurable 0/1/2/4 count-in measures with an audible beat click before playback begins, so you have time to prepare.
+- **BPM display** — the speed label shows both the percentage and the resulting tempo in beats per minute, updating live as you adjust the slider.
+- **Bass clef and treble clef filter buttons** — replacing the generic L/R labels for clearer left/right hand selection.
+- **Keyboard shortcuts** — full keyboard control for playback (Space, arrows, Page Up/Down, R, +/-, S, E, L); all shortcuts work reliably after tapping the sheet music.
+- **Loop region highlight** — the active loop section is shaded on the sheet music; loop restart is zero-delay; S/E/L keys set the loop start, end, and toggle.
+- **Track labels** — shows track number and instrument abbreviation above each staff; suppressed when tracks are merged; updates when the instrument changes.
+- **Playback engine fixes** — rebuilt playback MIDI track generation to fix note-highlighting sync issues; fixed tempo calculation, instrument restoration after seeking, and measure navigation edge cases.
+- **Instrument selection from track row** — tap any track row in settings to open the instrument picker directly; no separate button needed.
+- **File type support** — fixed Android manifest intent filters and added SMF MIME type support so the app opens from any file manager; percussion tracks are shown by default.
+- **Automated CI/CD** — signed release APK and versioned GitHub release created automatically on every version bump; fastlane changelogs generated from git log.
+
+For a detailed per-feature history see [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
