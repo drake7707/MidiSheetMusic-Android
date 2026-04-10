@@ -88,7 +88,7 @@ public class TrackRowPreference extends Preference {
         TextView instrumentView = (TextView) holder.findViewById(R.id.track_instrument);
         ImageButton btnVisibility = (ImageButton) holder.findViewById(R.id.btn_visibility);
         ImageButton btnMute = (ImageButton) holder.findViewById(R.id.btn_mute);
-        ImageButton btnInstrument = (ImageButton) holder.findViewById(R.id.btn_instrument);
+        //ImageButton btnInstrument = (ImageButton) holder.findViewById(R.id.btn_instrument);
         Button btnOctaveShift = (Button) holder.findViewById(R.id.btn_octave_shift);
         SeekBar seekVolume = (SeekBar) holder.findViewById(R.id.seek_volume);
         TextView txtVolume = (TextView) holder.findViewById(R.id.txt_volume);
@@ -127,7 +127,9 @@ public class TrackRowPreference extends Preference {
         });
 
         // Instrument picker
-        btnInstrument.setOnClickListener(v -> showInstrumentPicker(instrumentView));
+        //btnInstrument.setOnClickListener(v -> showInstrumentPicker(instrumentView));
+        instrumentView.setOnClickListener(v -> showInstrumentPicker(instrumentView));
+        titleView.setOnClickListener(v -> showInstrumentPicker(instrumentView));
 
         // Octave shift button
         updateOctaveShiftButton(btnOctaveShift);
