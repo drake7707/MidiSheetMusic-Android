@@ -358,9 +358,14 @@ public class Staff {
 
         if (loopStartX < 0 || loopEndX < 0) return;
 
+        int line = 1;
+
+
+
         /* Vertical extent matches DrawEndLines */
-        int ystart = (tracknum == 0) ? ytop - SheetMusic.LineWidth : 0;
-        int yend   = (tracknum == totaltracks - 1) ? ytop + 4 * SheetMusic.NoteHeight : height;
+        int ystart = ytop - SheetMusic.LineWidth; //(tracknum == 0) ? ytop - SheetMusic.LineWidth : 0;
+        int yend = ystart + SheetMusic.StaffHeight;
+       // int yend   = (tracknum == totaltracks - 1) ? ytop + 4 * SheetMusic.NoteHeight : height;
 
         Paint.Style savedStyle = paint.getStyle();
         int savedColor = paint.getColor();
@@ -575,8 +580,10 @@ public class Staff {
                  * Use the same vertical bounds as DrawLoopHighlight (staff bar height),
                  * adjusted for the active canvas translation of (xpos-2, -2). */
                 if (isWithinLoopRegion(start)) {
-                    int ystart = (tracknum == 0) ? ytop - SheetMusic.LineWidth : 0;
-                    int yend   = (tracknum == totaltracks - 1) ? ytop + 4 * SheetMusic.NoteHeight : height;
+                    int ystart = ytop - SheetMusic.LineWidth; //(tracknum == 0) ? ytop - SheetMusic.LineWidth : 0;
+                    int yend = ystart + SheetMusic.StaffHeight;
+                    //int ystart = (tracknum == 0) ? ytop - SheetMusic.LineWidth : 0;
+                    //int yend   = (tracknum == totaltracks - 1) ? ytop + 4 * SheetMusic.NoteHeight : height;
                     paint.setStyle(Paint.Style.FILL);
                     paint.setColor(LOOP_TINT_COLOR);
                     canvas.drawRect(0, ystart + 2, curr.getWidth()+4, yend + 2, paint);

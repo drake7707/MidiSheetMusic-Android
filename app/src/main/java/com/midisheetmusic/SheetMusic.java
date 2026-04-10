@@ -92,7 +92,7 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
     private int      shade1;          /** The color for shading */
     private int      shade2;          /** The color for shading left-hand piano */
     private Paint    paint;           /** The paint for drawing */
-    private boolean  surfaceReady;    /** True if we can draw on the surface */
+    private volatile boolean  surfaceReady;    /** True if we can draw on the surface */
     private Bitmap   bufferBitmap;    /** The bitmap for drawing */
     private Canvas   bufferCanvas;    /** The canvas for drawing */
     private MidiPlayer player;        /** For pausing the music */
@@ -1052,18 +1052,21 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
 
     /** Obtain the drawing canvas and call onDraw() */
     void draw() {
-        new Thread(() -> {
+       // new Thread(() -> {    Don't use thread, it causes glitches because the code not properly multithread guarded
             if (!surfaceReady) {
                 return;
             }
             SurfaceHolder holder = getHolder();
             Canvas canvas = holder.lockCanvas();
-            if (canvas == null) {
-                return;
+            try {
+                if (canvas == null) {
+                    return;
+                }
+                doDraw(canvas);
+            } finally {
+                holder.unlockCanvasAndPost(canvas);
             }
-            doDraw(canvas);
-            holder.unlockCanvasAndPost(canvas);
-        }).start();
+      //  }).start();
     }
 
     /** Draw the SheetMusic. */
