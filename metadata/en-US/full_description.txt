@@ -1,0 +1,40 @@
+Load any MIDI file and MidiSheetMusic will play it while simultaneously highlighting the current notes on scrolling sheet music and an on-screen piano keyboard. Settings are saved per song so you can pick up exactly where you left off.
+
+Comes with over 60 classical piano pieces ready to play (Bach, Beethoven, Chopin, Mozart, Schubert, Tchaikovsky, and many more). You can also open any .mid file from your device storage directly from within the app or from a file manager.
+
+<b>Features</b>
+
+• Scrolling sheet music that highlights notes as they play
+• On-screen piano keyboard with note highlighting
+• Adjustable playback speed (1 %–100 %)
+• Per-song settings saved automatically
+• Loop any section of a piece for focused practice
+• Count-in measures before playback starts
+• Step through the piece note by note or by measure (forward and backward)
+• Multiple tracks: show/hide, mute, change instrument, shift octave
+• Combine all tracks into a standard two-staff piano score
+• Transpose notes up or down by any number of semitones
+• Override key signature and time signature
+• Show note letters (A–G, Do-Re-Mi, or numbers) next to note heads
+• Color notes by pitch or highlight accidentals in red
+• Customisable highlight colors for each hand
+• Vertical or horizontal scroll direction
+• Save the full sheet music as PNG images
+• USB MIDI keyboard support — highlights notes you play in real time
+• Hardware keyboard shortcuts for hands-free control
+
+<b>Keyboard shortcuts (for for example using bluetooth pedal)</b>
+
+Space — Play / Pause
+Left / Right Arrow — Previous / Next note
+Page Up / Page Down — Back / Forward one measure
+R — Reset to start
++ / - — Increase / Decrease speed
+S / E / L — Set loop start / end, toggle loop
+
+<b>Permissions</b>
+
+• Storage read access — to open MIDI files from your device
+• USB host — to connect a USB MIDI keyboard (optional)
+
+This is a free and open-source application. Source code is available at https://github.com/drake7707/MidiSheetMusic-Android

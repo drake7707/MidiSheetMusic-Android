@@ -47,8 +47,58 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from build.gradle
+        id: version
+        run: |
+          VERSION_NAME=$(grep 'versionName' app/build.gradle | sed 's/.*versionName "\(.*\)".*/\1/')
+          VERSION_CODE=$(grep 'versionCode' app/build.gradle | sed 's/.*versionCode \([0-9]*\).*/\1/')
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION_NAME" >> $GITHUB_OUTPUT
+
+      - name: Check if release tag already exists
+        id: tag_check
+        run: |
+          if git ls-remote --tags origin "refs/tags/v${{ steps.version.outputs.version_name }}" | grep -q .; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.version.outputs.version_name }} already exists — skipping release."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.version.outputs.version_name }} does not exist — creating release."
+          fi
+
+      - name: Generate fastlane changelog
+        if: steps.tag_check.outputs.exists == 'false'
+        id: changelog
+        run: |
+          CHANGELOG_FILE="fastlane/metadata/android/en-US/changelogs/${{ steps.version.outputs.version_code }}.txt"
+          if [ ! -f "$CHANGELOG_FILE" ]; then
+            PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            if [ -n "$PREV_TAG" ]; then
+              RANGE="$PREV_TAG..HEAD"
+            else
+              RANGE="HEAD"
+            fi
+            git log --no-merges --pretty=format:"• %s" $RANGE > "$CHANGELOG_FILE"
+            echo "generated=true" >> $GITHUB_OUTPUT
+          else
+            echo "generated=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit fastlane changelog
+        if: steps.tag_check.outputs.exists == 'false' && steps.changelog.outputs.generated == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "fastlane/metadata/android/en-US/changelogs/${{ steps.version.outputs.version_code }}.txt"
+          git commit -m "Add fastlane changelog for ${{ steps.version.outputs.tag }} [skip ci]"
+          git push
 
       - name: Set up JDK 17
+        if: steps.tag_check.outputs.exists == 'false'
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -56,13 +106,16 @@ jobs:
           cache: gradle
 
       - name: Grant execute permission for gradlew
+        if: steps.tag_check.outputs.exists == 'false'
         run: chmod +x gradlew
 
       - name: Decode keystore
+        if: steps.tag_check.outputs.exists == 'false'
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "${{ github.workspace }}/app/keystore.jks"
 
       - name: Build release APK
+        if: steps.tag_check.outputs.exists == 'false'
         env:
           KEYSTORE_FILE: ${{ github.workspace }}/app/keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -71,10 +124,11 @@ jobs:
         run: ./gradlew assembleRelease --stacktrace
 
       - name: Remove keystore
-        if: always()
+        if: always() && steps.tag_check.outputs.exists == 'false'
         run: rm -f "${{ github.workspace }}/app/keystore.jks"
 
       - name: Upload release APK artifact
+        if: steps.tag_check.outputs.exists == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: app-release-${{ github.sha }}
@@ -82,12 +136,13 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Create or update "latest" GitHub release
+      - name: Create versioned GitHub release
+        if: steps.tag_check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
-          name: Latest
-          body: "Automated release from the latest commit on main."
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          body_path: fastlane/metadata/android/en-US/changelogs/${{ steps.version.outputs.version_code }}.txt
           prerelease: false
           files: app/build/outputs/apk/release/app-release.apk
           make_latest: true
