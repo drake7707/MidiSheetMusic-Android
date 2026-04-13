@@ -251,6 +251,8 @@ Improvements introduced in this fork include:
 
 For a detailed per-feature history see [CHANGELOG.md](CHANGELOG.md).
 
+Disclaimer concerning AI usage: I use Github Copilot to make draft changes, then I review them as if they were a junior developer and make comments until the code looks good (or fix it myself directly)
+
 ---
 
 Please feel free to open an issue to report a bug or request a feature:
