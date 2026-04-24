@@ -329,6 +329,11 @@ public class ChordSymbol implements MusicSymbol {
                 result = symbol.getAboveStaff();
             }
         }
+
+        /* Reserve extra room above the beam end for a triplet bracket + "3" label */
+        if (stem1 != null && stem1.isTriplet() && stem1.getDirection() == Stem.Up) {
+            result += 3 * SheetMusic.NoteHeight;
+        }
         return result;
     }
 
@@ -359,6 +364,11 @@ public class ChordSymbol implements MusicSymbol {
             if (symbol.getBelowStaff() > result) {
                 result = symbol.getBelowStaff();
             }
+        }
+
+        /* Reserve extra room below the beam end for a triplet bracket + "3" label */
+        if (stem1 != null && stem1.isTriplet() && stem1.getDirection() == Stem.Down) {
+            result += 3 * SheetMusic.NoteHeight;
         }
         return result;
     }
@@ -827,6 +837,11 @@ public class ChordSymbol implements MusicSymbol {
      *   the horizontal spacing to that last stem.
      * - Mark all chords (except the first) as "receiver" pairs, so that
      *   they don't draw a curvy stem.
+     * - Mark the first stem as a triplet beam when all three notes carry
+     *   NoteDuration.Triplet, which GetNoteDuration() assigns exclusively to
+     *   notes whose sounding duration falls in [5/16, 3/8) of a quarter note
+     *   — the only range that contains quarter/3 and no other standard value.
+     *   This is therefore correct and time-signature-independent.
      */
     public static
     void CreateBeam(ChordSymbol[] chords, int spacing) {
@@ -863,6 +878,14 @@ public class ChordSymbol implements MusicSymbol {
         firstStem.SetPair(lastStem, spacing);
         for (int i = 1; i < chords.length; i++) {
             chords[i].getStem().setReceiver(true);
+        }
+
+        /* NoteDuration.Triplet is assigned by GetNoteDuration() to notes whose
+         * sounding duration falls in [5/16, 3/8) of a quarter note — a range that
+         * contains quarter/3 and no other standard note value — so this check is
+         * correct and time-signature-independent for any beamed group of three. */
+        if (chords.length == 3 && firstStem.getDuration() == NoteDuration.Triplet) {
+            firstStem.setTriplet(true);
         }
     }
 

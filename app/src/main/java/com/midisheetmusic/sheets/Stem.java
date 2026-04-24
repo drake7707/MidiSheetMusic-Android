@@ -55,7 +55,7 @@ public class Stem {
     private int width_to_pair;      /** The width (in pixels) to the chord pair */
     private boolean receiver_in_pair;  /** This stem is the receiver of a horizontal
                                     * beam stem from another chord. */
-    private boolean isTriplet;      /** True if this stem is the start of a beamed triplet group */
+    private boolean tripletBeam;    /** True if this stem is the start of a beamed triplet group */
 
     /** Get/Set the direction of the stem (Up or Down) */
     public int getDirection() { return direction; }
@@ -86,8 +86,8 @@ public class Stem {
     /** Get/Set whether this stem is the start of a beamed triplet group.
      * When true, DrawHorizBarStem will render a triplet bracket with "3".
      */
-    public boolean isTriplet() { return isTriplet; }
-    public void setTriplet(boolean value) { isTriplet = value; }
+    public boolean isTriplet() { return tripletBeam; }
+    public void setTriplet(boolean value) { tripletBeam = value; }
 
     /** Create a new stem.  The top note, bottom note, and direction are 
      * needed for drawing the vertical line of the stem.  The duration is 
@@ -111,7 +111,7 @@ public class Stem {
         pair = null;
         width_to_pair = 0;
         receiver_in_pair = false;
-        isTriplet = false;
+        tripletBeam = false;
     }
 
     /** Calculate the vertical position (white note key) where 
@@ -394,6 +394,14 @@ public class Stem {
             if (duration == NoteDuration.ThirtySecond) {
                 canvas.drawLine(xstart, ystart, xend, yend, paint);
             }
+
+            if (isTriplet) {
+                /* ystart/yend were incremented twice; recover the original beam y */
+                int ybeam = Math.min(
+                        ytop + topstaff.Dist(end) * SheetMusic.NoteHeight/2,
+                        ytop + topstaff.Dist(pair.end) * SheetMusic.NoteHeight/2);
+                DrawTripletBracket(canvas, paint, xstart, xend, ybeam, true);
+            }
         }
 
         else {
@@ -434,8 +442,68 @@ public class Stem {
             if (duration == NoteDuration.ThirtySecond) {
                 canvas.drawLine(xstart, ystart, xend, yend, paint);
             }
+
+            if (isTriplet) {
+                /* ystart/yend were decremented twice; recover the original beam y */
+                int ybeam = Math.max(
+                        ytop + topstaff.Dist(end) * SheetMusic.NoteHeight/2 + SheetMusic.NoteHeight,
+                        ytop + topstaff.Dist(pair.end) * SheetMusic.NoteHeight/2 + SheetMusic.NoteHeight);
+                DrawTripletBracket(canvas, paint, xstart, xend, ybeam, false);
+            }
         }
         paint.setStrokeWidth(1);
+    }
+
+    /** Draw the triplet bracket: a horizontal line (with a gap for "3") and
+     *  small vertical hooks at each end, placed above the beam when {@code above}
+     *  is true, or below when false.
+     *
+     * @param xstart   X coordinate of the first stem
+     * @param xend     X coordinate of the last stem
+     * @param ybeam    Y coordinate of the beam line (top edge if above, bottom edge if below)
+     * @param above    True → bracket sits above the beam (stems up); false → below (stems down)
+     */
+    private void DrawTripletBracket(Canvas canvas, Paint paint,
+                                    int xstart, int xend, int ybeam, boolean above) {
+        int xcenter = (xstart + xend) / 2;
+
+        /* Position the bracket line one NoteHeight away from the beam */
+        int bracketGap = SheetMusic.NoteHeight;
+        int ybracket = above ? ybeam - bracketGap : ybeam + bracketGap;
+
+        /* Measure the "3" glyph so we can leave a gap in the bracket line */
+        Rect bounds = new Rect();
+        paint.getTextBounds("3", 0, 1, bounds);
+        int halfTextWidth = bounds.width() / 2 + 2;   /* 2 px padding on each side */
+
+        /* Draw bracket with thin strokes */
+        paint.setStrokeWidth(1);
+        paint.setStrokeCap(Paint.Cap.BUTT);
+
+        /* Horizontal line: left half and right half (gap in the middle for "3") */
+        canvas.drawLine(xstart, ybracket, xcenter - halfTextWidth, ybracket, paint);
+        canvas.drawLine(xcenter + halfTextWidth, ybracket, xend, ybracket, paint);
+
+        /* Short vertical hooks pointing toward the beam */
+        int hookLen = SheetMusic.NoteHeight / 2;
+        if (above) {
+            canvas.drawLine(xstart, ybracket, xstart, ybracket + hookLen, paint);
+            canvas.drawLine(xend,   ybracket, xend,   ybracket + hookLen, paint);
+        } else {
+            canvas.drawLine(xstart, ybracket, xstart, ybracket - hookLen, paint);
+            canvas.drawLine(xend,   ybracket, xend,   ybracket - hookLen, paint);
+        }
+
+        /* Draw "3" centred on the bracket line */
+        Paint.Style savedStyle = paint.getStyle();
+        Paint.Align savedAlign = paint.getTextAlign();
+        paint.setStyle(Paint.Style.FILL);
+        paint.setTextAlign(Paint.Align.CENTER);
+        /* Place baseline so the glyph is vertically centred on ybracket */
+        int textY = ybracket - (bounds.top + bounds.bottom) / 2;
+        canvas.drawText("3", xcenter, textY, paint);
+        paint.setStyle(savedStyle);
+        paint.setTextAlign(savedAlign);
     }
 
     @Override
