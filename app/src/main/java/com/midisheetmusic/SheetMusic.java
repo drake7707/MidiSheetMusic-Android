@@ -42,6 +42,7 @@ import com.midisheetmusic.sheets.SymbolWidths;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.TreeSet;
 
 class BoxedInt {
     public int value;
@@ -171,6 +172,10 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
         if (options.time != null) {
             time = options.time;
         }
+
+        /* Split notes that cross barlines into tied segments so that every
+         * note fits within its measure and measures are correctly filled. */
+        SplitCrossMeasureNotes(tracks, time);
         if (options.key == -1) {
             mainkey = GetKeySignature(tracks);
         }
@@ -214,7 +219,14 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
 
         /* After making chord pairs, the stem directions can change,
          * which affects the staff height.  Re-calculate the staff height.
+         * Also detect swing feel (using the original unrounded tracks so that
+         * RoundStartTimes has not yet quantized away the swing offsets) and
+         * apply the swing marker to the first staff before the height pass.
          */
+        String swingLabel = detectSwing(file.getTracks(), time);
+        if (swingLabel != null && !staffs.isEmpty()) {
+            staffs.get(0).setSwingLabel(swingLabel);
+        }
         for (Staff staff : staffs) {
             staff.CalculateHeight();
         }
@@ -680,6 +692,196 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
 
             /* Else, start searching again from index i */
         }
+    }
+
+
+    /** Split notes that cross (or land within a tick of) a measure boundary into
+     *  two adjacent tied notes of the correct duration.
+     *
+     *  Two enhancements over a plain barline-crossing check:
+     *
+     *  1. Off-by-one snap: MIDI DAWs frequently place Note-Off events 1–2 ticks
+     *     before the bar to avoid overlap with the next note.  If a note ends
+     *     within {@code END_TOLERANCE} ticks of a barline it is silently extended
+     *     to reach that barline so that the split logic fires correctly.
+     *
+     *  2. Off-beat split: when a note does not start on a quarter-note beat and
+     *     its (possibly snapped) end reaches or crosses the barline, we split it
+     *     at the next quarter-note beat rather than at the barline itself.  This
+     *     converts e.g. a half note starting on the "and" of a beat into the
+     *     standard notation of (8th to beat) + (half note from beat), tied.
+     *     A minimum fragment length of quarter/8 is enforced so that notes
+     *     starting only a few ticks before a beat are left intact.
+     */
+    private static void
+    SplitCrossMeasureNotes(ArrayList<MidiTrack> tracks, TimeSignature time) {
+        final int measureLen = time.getMeasure();
+        final int quarter    = time.getQuarter();
+        /* Safety: both values must be positive (they always are for valid MIDI
+         * files, but guard against malformed files to avoid divide-by-zero). */
+        if (measureLen <= 0 || quarter <= 0) return;
+        /* MIDI DAWs (e.g. Logic, GarageBand) routinely place Note-Off events
+         * 1–2 ticks before the bar to avoid overlapping the next note.  Two
+         * ticks is the de-facto maximum observed drift and keeps the tolerance
+         * well below a 32nd note (quarter/8), preventing false snaps on short
+         * notes that genuinely end before the bar. */
+        final int END_TOLERANCE = 2;
+        /* Minimum fragment duration when splitting an off-beat note at the next
+         * quarter-beat boundary.  This equals a 32nd note (quarter/8) so that
+         * notes starting only a few ticks before a beat are not split into a
+         * fragment too short to be readable in standard notation. */
+        final int MIN_FRAGMENT = quarter / 8;
+
+        for (MidiTrack track : tracks) {
+            ArrayList<MidiNote> notes = track.getNotes();
+            int i = 0;
+            while (i < notes.size()) {
+                MidiNote note     = notes.get(i);
+                int noteStart     = note.getStartTime();
+                int measureEnd    = ((noteStart / measureLen) + 1) * measureLen;
+
+                /* ---- Step 1: snap note end to nearby barline ---- */
+                int noteEnd = note.getEndTime();
+                if (noteEnd < measureEnd && (measureEnd - noteEnd) <= END_TOLERANCE) {
+                    note.setDuration(measureEnd - noteStart);
+                    noteEnd = note.getEndTime();
+                }
+
+                /* ---- Step 2: determine split point ---- */
+                int splitPoint = -1;
+                if (noteEnd >= measureEnd) {
+                    if (noteStart % quarter != 0) {
+                        /* Note starts off a quarter-beat: split at the next beat so
+                         * that the leading fragment can be expressed as a clean note
+                         * value (e.g. 8th) and the continuation starts on the beat. */
+                        int nextBeat = ((noteStart / quarter) + 1) * quarter;
+                        if (nextBeat - noteStart >= MIN_FRAGMENT) {
+                            /* Fragment is long enough to be a readable note. */
+                            splitPoint = nextBeat;
+                        } else {
+                            /* Fragment would be too tiny; fall back to barline. */
+                            splitPoint = measureEnd;
+                        }
+                    } else {
+                        /* Note starts on a beat: split at the barline as usual. */
+                        splitPoint = measureEnd;
+                    }
+                }
+
+                /* ---- Step 3: perform split if valid ---- */
+                if (splitPoint > noteStart && splitPoint < noteEnd) {
+                    int firstDur = splitPoint - noteStart;
+                    int contDur  = noteEnd - splitPoint;
+                    note.setDuration(firstDur);
+                    note.setTiedToNext(true);
+
+                    MidiNote cont = new MidiNote(splitPoint, note.getChannel(),
+                                                 note.getNumber(), contDur);
+                    cont.setTiedToPrev(true);
+
+                    int insertIdx = i + 1;
+                    while (insertIdx < notes.size() &&
+                           notes.get(insertIdx).getStartTime() < splitPoint) {
+                        insertIdx++;
+                    }
+                    /* Also respect the ascending note-number order that
+                     * RoundStartTimes establishes for simultaneous notes.
+                     * Without this, multiple continuations at the same
+                     * splitPoint end up in reverse order, causing
+                     * ChordSymbol to throw IllegalArgumentException. */
+                    while (insertIdx < notes.size() &&
+                           notes.get(insertIdx).getStartTime() == splitPoint &&
+                           notes.get(insertIdx).getNumber() < cont.getNumber()) {
+                        insertIdx++;
+                    }
+                    notes.add(insertIdx, cont);
+                }
+                i++;
+            }
+        }
+    }
+
+
+    /** Detect whether the piece is in swing feel by examining the raw (unrounded)
+     *  note start-time positions relative to the beat.
+     *
+     *  In swing, the "off-beat" note of a pair lands at 2/3 of the reference beat
+     *  instead of the straight 1/2.  We count on-beat notes followed by a note at
+     *  the swing offset vs the straight offset.
+     *
+     *  8th-note swing  : the off-beat 8th is at 2/3 of a quarter note from the
+     *                    quarter-note beat (gap ≈ quarter × 2/3).
+     *
+     *  16th-note swing : the off-beat 16th is at 2/3 of an 8th note from an
+     *                    8th-note beat (gap ≈ eighth × 2/3 = quarter/3).  This
+     *                    check fires only for notes on 8th beats that are NOT on
+     *                    quarter beats, so it does not overlap with triplet 8ths
+     *                    (which land at quarter/3 from a quarter beat).
+     *
+     *  Must be called with the original (pre-transformation) tracks so that
+     *  RoundStartTimes() has not yet quantized away the swing offsets.
+     *
+     *  @return "Swing" for 8th-note swing, "Swing (16ths)" for 16th-note swing,
+     *          or null if no swing feel is detected.
+     */
+    private static String
+    detectSwing(ArrayList<MidiTrack> tracks, TimeSignature time) {
+        int quarter   = time.getQuarter();
+        int eighth    = quarter / 2;
+        int tolerance = quarter / 8;
+
+        /* For very low quarternote values (malformed files) the sub-divisions
+         * collapse to zero, making modulo undefined — just bail out. */
+        if (eighth <= 0) return null;
+
+        /* Collect all distinct note-on start times across every track.
+         * De-duplicating simultaneous notes (chords) means we examine
+         * event-to-event gaps, not individual note-to-note gaps within a chord. */
+        TreeSet<Integer> timeSet = new TreeSet<>();
+        for (MidiTrack track : tracks) {
+            for (MidiNote note : track.getNotes()) {
+                timeSet.add(note.getStartTime());
+            }
+        }
+        Integer[] times = timeSet.toArray(new Integer[0]);
+
+        int swingEighths = 0,   straightEighths = 0;
+        int swingSixteenths = 0, straightSixteenths = 0;
+
+        for (int i = 0; i < times.length - 1; i++) {
+            int t   = times[i];
+            int gap = times[i + 1] - t;
+            int beatMod = t % quarter;
+
+            if (beatMod <= tolerance) {
+                /* Note is on a quarter beat — check for 8th-note swing.
+                 * Swing off-beat  : gap ≈ quarter × 2/3.
+                 * Straight off-beat: gap ≈ quarter / 2. */
+                if (Math.abs(gap - quarter * 2 / 3) <= tolerance) {
+                    swingEighths++;
+                } else if (Math.abs(gap - eighth) <= tolerance) {
+                    straightEighths++;
+                }
+            } else if ((t % eighth) <= tolerance) {
+                /* Note is on an 8th beat but NOT a quarter beat — check for
+                 * 16th-note swing.
+                 * Swing off-beat  : gap ≈ eighth × 2/3 (= quarter / 3).
+                 * Straight off-beat: gap ≈ eighth / 2  (= quarter / 4). */
+                if (Math.abs(gap - eighth * 2 / 3) <= tolerance) {
+                    swingSixteenths++;
+                } else if (Math.abs(gap - eighth / 2) <= tolerance) {
+                    straightSixteenths++;
+                }
+            }
+        }
+
+        if (swingEighths >= 4 && swingEighths > straightEighths) {
+            return "Swing";
+        }
+        if (swingSixteenths >= 4 && swingSixteenths > straightSixteenths) {
+            return "Swing (16ths)";
+        }
+        return null;
     }
 
 

@@ -43,6 +43,9 @@ public class ChordSymbol implements MusicSymbol {
     private Stem stem2;            /** The second stem of the chord. Can be null */
     private boolean hastwostems;   /** True if this chord has two stems */
     private SheetMusic sheetmusic; /** Used to get colors and other options */
+    private ArrayList<WhiteNote> tiedNotes;         /** White-note positions tied forward to the next chord (may be null) */
+    private ArrayList<WhiteNote> tiedFromPrevNotes; /** White-note positions tied from the previous chord (may be null) */
+    private boolean tiedToPrev;    /** True if this chord is the continuation of a tie from the previous chord */
 
 
     /** Create a new Chord Symbol from the given list of midi notes.
@@ -75,6 +78,36 @@ public class ChordSymbol implements MusicSymbol {
 
         notedata = CreateNoteData(midinotes, key, time);
         accidsymbols = CreateAccidSymbols(notedata, clef);
+
+        /* Propagate tie flags from MidiNotes to this chord symbol. */
+        tiedNotes = null;
+        tiedFromPrevNotes = null;
+        tiedToPrev = false;
+        for (MidiNote midi : midinotes) {
+            if (midi.isTiedToPrev()) {
+                tiedToPrev = true;
+                /* Record which white-note positions are incoming so that
+                 * Staff.DrawTieArcs() can draw the matching half-arc from
+                 * the left margin when the source chord is on a prior staff row. */
+                for (NoteData nd : notedata) {
+                    if (nd.number == midi.getNumber()) {
+                        if (tiedFromPrevNotes == null) tiedFromPrevNotes = new ArrayList<>();
+                        tiedFromPrevNotes.add(nd.whitenote);
+                        break;
+                    }
+                }
+            }
+            if (midi.isTiedToNext()) {
+                /* Find the matching NoteData entry by MIDI number and record its white-note position. */
+                for (NoteData nd : notedata) {
+                    if (nd.number == midi.getNumber()) {
+                        if (tiedNotes == null) tiedNotes = new ArrayList<>();
+                        tiedNotes.add(nd.whitenote);
+                        break;
+                    }
+                }
+            }
+        }
 
 
         /* Find out how many stems we need (1 or 2) */
@@ -252,6 +285,64 @@ public class ChordSymbol implements MusicSymbol {
     /** Return true if this chord has two stems */
     public boolean getHasTwoStems() { return hastwostems; }
 
+    /** Return true if this chord carries a forward tie to the next chord. */
+    public boolean hasTie() { return tiedNotes != null && !tiedNotes.isEmpty(); }
+
+    /** Return the white-note positions (one per tied pitch) that are tied to the next chord. */
+    public ArrayList<WhiteNote> getTiedNotes() { return tiedNotes; }
+
+    /** Return true if this chord is the arrival end of a tie from the previous chord. */
+    public boolean isTiedToPrev() { return tiedToPrev; }
+
+    /** Return the white-note positions (one per tied pitch) that are incoming from the
+     *  previous chord via a tie.  Null if no notes in this chord are tie continuations. */
+    public ArrayList<WhiteNote> getTiedFromPrevNotes() { return tiedFromPrevNotes; }
+
+    /** Compute the total pixel width used by the accidental symbols (without drawing).
+     *  Mirrors the logic in DrawAccid() but allocation-free.
+     *  The threshold of 6 note-positions between adjacent accidentals mirrors the
+     *  value used in DrawAccid() and getMinWidth(): two accidentals that are fewer
+     *  than 6 white-note positions apart overlap vertically and must be staggered
+     *  horizontally, requiring extra width. */
+    private int getAccidWidth() {
+        if (accidsymbols.length == 0) return 0;
+        int xpos = 0;
+        AccidSymbol prev = null;
+        for (AccidSymbol symbol : accidsymbols) {
+            /* Shift right only when consecutive accidentals are close enough
+             * to overlap vertically (fewer than 6 white-note positions apart). */
+            if (prev != null && symbol.getNote().Dist(prev.getNote()) < 6) {
+                xpos += symbol.getWidth();
+            }
+            prev = symbol;
+        }
+        xpos += prev.getWidth();
+        return xpos;
+    }
+
+    /** Return the x pixel offset from this chord's slot start (as stored in Staff.xpos[])
+     *  to the right edge of the primary (leftmost) note head.
+     *  Use this to anchor the start of a tie arc leaving this chord.
+     *
+     *  Note: Draw() right-aligns the chord with translate(width - getMinWidth()), then
+     *  translates by the accidental width before calling DrawNotes().  Because
+     *  getMinWidth() already includes the accidental width, the two offsets cancel and
+     *  the note-head position is independent of getAccidWidth(). */
+    int getNoteXRight() {
+        return width - (2 * SheetMusic.NoteHeight + SheetMusic.NoteHeight * 3 / 4)
+                + SheetMusic.LineSpace / 4 + SheetMusic.NoteWidth;
+    }
+
+    /** Return the x pixel offset from this chord's slot start (as stored in Staff.xpos[])
+     *  to the left edge of the primary (leftmost) note head.
+     *  Use this to anchor the end of a tie arc arriving at this chord.
+     *
+     *  See getNoteXRight() for why getAccidWidth() is intentionally not included. */
+    int getNoteXLeft() {
+        return width - (2 * SheetMusic.NoteHeight + SheetMusic.NoteHeight * 3 / 4)
+                + SheetMusic.LineSpace / 4;
+    }
+
     /* Return the stem will the smallest duration.  This property
      * is used when making chord pairs (chords joined by a horizontal
      * beam stem). The stem durations must match in order to make
@@ -329,6 +420,11 @@ public class ChordSymbol implements MusicSymbol {
                 result = symbol.getAboveStaff();
             }
         }
+
+        /* Reserve extra room above the beam end for a triplet bracket + "3" label */
+        if (stem1 != null && stem1.isTriplet() && stem1.getDirection() == Stem.Up) {
+            result += 3 * SheetMusic.NoteHeight;
+        }
         return result;
     }
 
@@ -359,6 +455,11 @@ public class ChordSymbol implements MusicSymbol {
             if (symbol.getBelowStaff() > result) {
                 result = symbol.getBelowStaff();
             }
+        }
+
+        /* Reserve extra room below the beam end for a triplet bracket + "3" label */
+        if (stem1 != null && stem1.isTriplet() && stem1.getDirection() == Stem.Down) {
+            result += 3 * SheetMusic.NoteHeight;
         }
         return result;
     }
@@ -827,6 +928,11 @@ public class ChordSymbol implements MusicSymbol {
      *   the horizontal spacing to that last stem.
      * - Mark all chords (except the first) as "receiver" pairs, so that
      *   they don't draw a curvy stem.
+     * - Mark the first stem as a triplet beam when all three notes carry
+     *   NoteDuration.Triplet, which GetNoteDuration() assigns exclusively to
+     *   notes whose sounding duration falls in [5/16, 3/8) of a quarter note
+     *   — the only range that contains quarter/3 and no other standard value.
+     *   This is therefore correct and time-signature-independent.
      */
     public static
     void CreateBeam(ChordSymbol[] chords, int spacing) {
@@ -863,6 +969,15 @@ public class ChordSymbol implements MusicSymbol {
         firstStem.SetPair(lastStem, spacing);
         for (int i = 1; i < chords.length; i++) {
             chords[i].getStem().setReceiver(true);
+        }
+
+        /* NoteDuration.Triplet is assigned by GetNoteDuration() to notes whose
+         * sounding duration falls in [5/16, 3/8) of a quarter note — a range that
+         * contains quarter/3 and no other standard note value — so this check is
+         * correct and time-signature-independent for any beamed group of three. */
+        NoteDuration firstDur = firstStem.getDuration();
+        if (chords.length == 3 && firstDur != null && firstDur == NoteDuration.Triplet) {
+            firstStem.setTriplet(true);
         }
     }
 

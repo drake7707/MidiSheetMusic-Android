@@ -60,6 +60,7 @@ public class Staff {
     private int endtime;                /** The time (in pulses) of last symbol */
     private int measureLength;          /** The time (in pulses) of a measure */
     private MidiOptions options;        /** The midi options (used for loop highlighting) */
+    private String swingLabel;          /** Swing marker text shown above the first staff, or null */
 
     /** Create a new staff with the given list of music symbols,
      * and the given key signature.  The clef is determined by
@@ -118,6 +119,11 @@ public class Staff {
      */
     public int getStartTime() { return starttime; }
 
+    /** Set the swing-feel label shown above this staff (e.g. "Swing" or "Swing (16ths)").
+     *  Pass null to clear. CalculateHeight() must be called afterwards to update spacing.
+     */
+    public void setSwingLabel(String label) { swingLabel = label; }
+
     /** Return the ending time of the staff, the endtime of
      *  the last symbol.  This is used during playback, to 
      *  automatically scroll the music while playing.
@@ -152,11 +158,17 @@ public class Staff {
         }
         above = Math.max(above, clefsym.getAboveStaff());
         below = Math.max(below, clefsym.getBelowStaff());
-        if (showMeasures) {
+        if (showMeasures || swingLabel != null) {
             above = Math.max(above, SheetMusic.NoteHeight * 3);
         }
         if (showTrackLabels) {
             above = Math.max(above, SheetMusic.NoteHeight * 2);
+        }
+        /* When both a swing label and track labels are active they would overlap
+         * at NoteHeight*2 and NoteHeight respectively.  Reserve an extra row so
+         * the swing label can sit one row higher than the track label. */
+        if (swingLabel != null && showTrackLabels) {
+            above = Math.max(above, SheetMusic.NoteHeight * 4);
         }
         ytop = above + SheetMusic.NoteHeight;
         height = SheetMusic.NoteHeight*5 + ytop + below;
@@ -475,11 +487,219 @@ public class Staff {
         if (showTrackLabels) {
             DrawTrackLabel(canvas, paint);
         }
+        if (swingLabel != null) {
+            DrawSwingMarker(canvas, paint);
+        }
         if (lyrics != null) {
             DrawLyrics(canvas, paint);
         }
-
+        DrawTieArcs(canvas, paint);
     }
+
+    /** Draw the swing-feel marker ("Swing" or "Swing (16ths)") above the top-left
+     *  of the staff, at the same vertical level as measure numbers.
+     *  When track labels are also shown it moves one row higher to avoid overlap.
+     */
+    private void DrawSwingMarker(Canvas canvas, Paint paint) {
+        float savedSize = paint.getTextSize();
+        paint.setTextSize(savedSize * 1.1f);
+        paint.setStyle(Paint.Style.FILL);
+        /* If track labels are visible they occupy ytop - NoteHeight.  Push the
+         * swing marker one row further up so the two texts don't collide. */
+        int ySwing = showTrackLabels
+                ? ytop - SheetMusic.NoteHeight * 3
+                : ytop - SheetMusic.NoteHeight * 2;
+        canvas.drawText(swingLabel,
+                        SheetMusic.LeftMargin,
+                        ySwing,
+                        paint);
+        paint.setTextSize(savedSize);
+    }
+
+    /** Draw tie arcs for all tied chords in this staff.
+     *
+     *  A tie is a small curved arc that connects a note head in one chord to the
+     *  same-pitch note head in the immediately following chord.  It curves away from
+     *  the stem: below the note head when the stem points up, above when down.
+     *
+     *  Two kinds of arcs are handled:
+     *
+     *  (a) Full arc: both the source chord (hasTie) and its partner (isTiedToPrev) are
+     *      in this same staff row.  A symmetric cubic Bézier is drawn between the
+     *      right edge of the source note head and the left edge of the partner note head.
+     *
+     *  (b) Outgoing half-arc: the source chord is in this staff but the partner is on
+     *      the next staff row.  A tapering quadratic arc is drawn from the note head to
+     *      the right margin.
+     *
+     *  (c) Incoming half-arc: the source chord was on the *previous* staff row and the
+     *      continuation chord (isTiedToPrev) is in this staff.  A mirrored tapering
+     *      quadratic arc is drawn from the left margin to the note head.
+     */
+    private void DrawTieArcs(Canvas canvas, Paint paint) {
+        /* Collect the x-position of every symbol so we can look ahead without
+         * re-traversing the list. */
+        int[] xpos = new int[symbols.size()];
+        int x = keysigWidth;
+        for (int i = 0; i < symbols.size(); i++) {
+            xpos[i] = x;
+            x += symbols.get(i).getWidth();
+        }
+
+        Paint.Style savedStyle = paint.getStyle();
+        float savedStroke = paint.getStrokeWidth();
+        int savedColor = paint.getColor();
+
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(1.5f);
+        paint.setColor(Color.BLACK);
+
+        for (int i = 0; i < symbols.size(); i++) {
+            if (!(symbols.get(i) instanceof ChordSymbol)) continue;
+            ChordSymbol chord = (ChordSymbol) symbols.get(i);
+
+            /* ---- (a)/(b) Outgoing: this chord has notes tied forward ---- */
+            if (chord.hasTie()) {
+                /* Find the paired (tiedToPrev) chord in this same staff. */
+                int partnerIdx = -1;
+                for (int j = i + 1; j < symbols.size(); j++) {
+                    if (symbols.get(j) instanceof ChordSymbol) {
+                        ChordSymbol next = (ChordSymbol) symbols.get(j);
+                        if (next.isTiedToPrev()) {
+                            partnerIdx = j;
+                        }
+                        break; /* stop at the first ChordSymbol regardless */
+                    }
+                }
+
+                WhiteNote topstaff = WhiteNote.Top(chord.getClef());
+                boolean tieBelow = (chord.getStem() == null ||
+                                    chord.getStem().getDirection() == com.midisheetmusic.sheets.Stem.Up);
+
+                /* x offset to the right edge of this chord's note head */
+                int x1 = xpos[i] + chord.getNoteXRight();
+
+                for (WhiteNote wn : chord.getTiedNotes()) {
+                    /* Centre of note head y.  DrawNotes translates the canvas to:
+                     *   (xnote + NoteWidth/2 + 1,  ynote - LineWidth + NoteHeight/2)
+                     * where ynote = ytop + topstaff.Dist(wn) * NoteHeight/2.
+                     * So the visual centre y = ytop + Dist * NoteHeight/2
+                     *                                  - LineWidth + NoteHeight/2. */
+                    int ynote = ytop + topstaff.Dist(wn) * SheetMusic.NoteHeight / 2
+                                - SheetMusic.LineWidth + SheetMusic.NoteHeight / 2;
+
+                    int x2;
+                    boolean halfArc;
+                    if (partnerIdx >= 0) {
+                        /* Partner in same staff: full symmetric arc. */
+                        ChordSymbol partner = (ChordSymbol) symbols.get(partnerIdx);
+                        x2 = xpos[partnerIdx] + partner.getNoteXLeft();
+                        halfArc = false;
+                    } else {
+                        /* Partner is on the next staff row — outgoing half-arc to right margin. */
+                        x2 = width - SheetMusic.NoteWidth;
+                        halfArc = true;
+                    }
+
+                    drawTieArc(canvas, paint, x1, x2, ynote, tieBelow, halfArc);
+                }
+            }
+
+            /* ---- (c) Incoming: this chord is a continuation whose source is on
+             *         the previous staff row ---- */
+            if (chord.isTiedToPrev() && chord.getTiedFromPrevNotes() != null) {
+                /* For each incoming tied note, check whether any earlier chord in THIS
+                 * staff is the source (i.e., has that white note in its tiedNotes list).
+                 * If no same-staff source exists the source chord is on the previous row
+                 * and we draw an incoming half-arc from the left margin.
+                 * Note: getTiedFromPrevNotes() returns at most one entry per pitch (1–4
+                 * typically), so copying the list here is negligible. */
+                ArrayList<WhiteNote> unresolved = new ArrayList<>(chord.getTiedFromPrevNotes());
+                for (int j = 0; j < i && !unresolved.isEmpty(); j++) {
+                    if (symbols.get(j) instanceof ChordSymbol) {
+                        ChordSymbol prev = (ChordSymbol) symbols.get(j);
+                        if (prev.hasTie() && prev.getTiedNotes() != null) {
+                            /* WhiteNote does not override equals(), so removeAll() would
+                             * use reference equality and never match.  Use Dist()==0 to
+                             * compare by value (same letter and octave). */
+                            for (WhiteNote prevWn : prev.getTiedNotes()) {
+                                unresolved.removeIf(wn -> wn.Dist(prevWn) == 0);
+                            }
+                        }
+                    }
+                }
+
+                if (!unresolved.isEmpty()) {
+                    WhiteNote topstaff = WhiteNote.Top(chord.getClef());
+                    boolean tieBelow = (chord.getStem() == null ||
+                                        chord.getStem().getDirection() == com.midisheetmusic.sheets.Stem.Up);
+                    /* x offset to the left edge of this chord's note head */
+                    int x2 = xpos[i] + chord.getNoteXLeft();
+
+                    for (WhiteNote wn : unresolved) {
+                        int ynote = ytop + topstaff.Dist(wn) * SheetMusic.NoteHeight / 2
+                                    - SheetMusic.LineWidth + SheetMusic.NoteHeight / 2;
+                        drawIncomingHalfArc(canvas, paint, keysigWidth, x2, ynote, tieBelow);
+                    }
+                }
+            }
+        }
+
+        paint.setStyle(savedStyle);
+        paint.setStrokeWidth(savedStroke);
+        paint.setColor(savedColor);
+    }
+
+    /** Draw a single outgoing bezier tie arc from (x1, y) to (x2, y).
+     *  @param tieBelow  True → arc bows downward; false → arc bows upward.
+     *  @param halfArc   True → taper the right end (outgoing cross-row tie).
+     */
+    private static void drawTieArc(Canvas canvas, Paint paint,
+                                    int x1, int x2, int y,
+                                    boolean tieBelow, boolean halfArc) {
+        int span = x2 - x1;
+        if (span <= 0) return;
+
+        /* Bow height: clamp between 4 and 14 px, proportional to span. */
+        int bow = Math.max(4, Math.min(14, span / 5));
+        if (!tieBelow) bow = -bow;
+
+        Path path = new Path();
+        path.moveTo(x1, y);
+        if (halfArc) {
+            /* Quadratic arc tapering to half-height at the right margin */
+            path.quadTo(x1 + span * 0.6f, y + bow, x2, y + bow / 2.0f);
+        } else {
+            /* Symmetric cubic bezier */
+            path.cubicTo(x1 + span / 3.0f, y + bow,
+                         x2 - span / 3.0f, y + bow,
+                         x2, y);
+        }
+        canvas.drawPath(path, paint);
+    }
+
+    /** Draw an incoming half-arc from the left margin to an arriving note head.
+     *  This mirrors the outgoing half-arc shape so the two halves look symmetrical
+     *  when viewed across the row break.
+     *  @param tieBelow  True → arc bows downward; false → arc bows upward.
+     */
+    private static void drawIncomingHalfArc(Canvas canvas, Paint paint,
+                                             int x1, int x2, int y,
+                                             boolean tieBelow) {
+        int span = x2 - x1;
+        if (span <= 0) return;
+
+        int bow = Math.max(4, Math.min(14, span / 5));
+        if (!tieBelow) bow = -bow;
+
+        /* Start at half-height (matching the outgoing arc's right end),
+         * peak near the destination, then land on the note head centre. */
+        Path path = new Path();
+        path.moveTo(x1, y + bow / 2.0f);
+        path.quadTo(x1 + span * 0.4f, y + bow, x2, y);
+        canvas.drawPath(path, paint);
+    }
+
 
     public MusicSymbol getCurrentNote(int currentPulseTime, TimeSignature sig) {
         for (int i = 0; i < symbols.size(); ++i) {
@@ -652,6 +872,7 @@ public class Staff {
                 if (lyrics != null) {
                     DrawLyrics(canvas, paint);
                 }
+                DrawTieArcs(canvas, paint);
             }
             if (curr instanceof ChordSymbol) {
                 ChordSymbol chord = (ChordSymbol) curr;
