@@ -619,7 +619,12 @@ public class Staff {
                     if (symbols.get(j) instanceof ChordSymbol) {
                         ChordSymbol prev = (ChordSymbol) symbols.get(j);
                         if (prev.hasTie() && prev.getTiedNotes() != null) {
-                            unresolved.removeAll(prev.getTiedNotes());
+                            /* WhiteNote does not override equals(), so removeAll() would
+                             * use reference equality and never match.  Use Dist()==0 to
+                             * compare by value (same letter and octave). */
+                            for (WhiteNote prevWn : prev.getTiedNotes()) {
+                                unresolved.removeIf(wn -> wn.Dist(prevWn) == 0);
+                            }
                         }
                     }
                 }
