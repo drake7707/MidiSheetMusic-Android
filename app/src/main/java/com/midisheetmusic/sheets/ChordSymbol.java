@@ -322,18 +322,25 @@ public class ChordSymbol implements MusicSymbol {
 
     /** Return the x pixel offset from this chord's slot start (as stored in Staff.xpos[])
      *  to the right edge of the primary (leftmost) note head.
-     *  Use this to anchor the start of a tie arc leaving this chord. */
+     *  Use this to anchor the start of a tie arc leaving this chord.
+     *
+     *  Note: Draw() right-aligns the chord with translate(width - getMinWidth()), then
+     *  translates by the accidental width before calling DrawNotes().  Because
+     *  getMinWidth() already includes the accidental width, the two offsets cancel and
+     *  the note-head position is independent of getAccidWidth(). */
     int getNoteXRight() {
         return width - (2 * SheetMusic.NoteHeight + SheetMusic.NoteHeight * 3 / 4)
-                + getAccidWidth() + SheetMusic.LineSpace / 4 + SheetMusic.NoteWidth;
+                + SheetMusic.LineSpace / 4 + SheetMusic.NoteWidth;
     }
 
     /** Return the x pixel offset from this chord's slot start (as stored in Staff.xpos[])
      *  to the left edge of the primary (leftmost) note head.
-     *  Use this to anchor the end of a tie arc arriving at this chord. */
+     *  Use this to anchor the end of a tie arc arriving at this chord.
+     *
+     *  See getNoteXRight() for why getAccidWidth() is intentionally not included. */
     int getNoteXLeft() {
         return width - (2 * SheetMusic.NoteHeight + SheetMusic.NoteHeight * 3 / 4)
-                + getAccidWidth() + SheetMusic.LineSpace / 4;
+                + SheetMusic.LineSpace / 4;
     }
 
     /* Return the stem will the smallest duration.  This property
