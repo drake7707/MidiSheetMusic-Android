@@ -717,7 +717,17 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
     SplitCrossMeasureNotes(ArrayList<MidiTrack> tracks, TimeSignature time) {
         final int measureLen = time.getMeasure();
         final int quarter    = time.getQuarter();
-        final int END_TOLERANCE = 2;   /* ticks; absorbs DAW off-by-one Note-Offs */
+        /* MIDI DAWs (e.g. Logic, GarageBand) routinely place Note-Off events
+         * 1–2 ticks before the bar to avoid overlapping the next note.  Two
+         * ticks is the de-facto maximum observed drift and keeps the tolerance
+         * well below a 32nd note (quarter/8), preventing false snaps on short
+         * notes that genuinely end before the bar. */
+        final int END_TOLERANCE = 2;
+        /* Minimum fragment duration when splitting an off-beat note at the next
+         * quarter-beat boundary.  This equals a 32nd note (quarter/8) so that
+         * notes starting only a few ticks before a beat are not split into a
+         * fragment too short to be readable in standard notation. */
+        final int MIN_FRAGMENT = quarter / 8;
 
         for (MidiTrack track : tracks) {
             ArrayList<MidiNote> notes = track.getNotes();
@@ -742,8 +752,8 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
                          * that the leading fragment can be expressed as a clean note
                          * value (e.g. 8th) and the continuation starts on the beat. */
                         int nextBeat = ((noteStart / quarter) + 1) * quarter;
-                        if (nextBeat - noteStart >= quarter / 8) {
-                            /* Fragment is long enough to be a meaningful note. */
+                        if (nextBeat - noteStart >= MIN_FRAGMENT) {
+                            /* Fragment is long enough to be a readable note. */
                             splitPoint = nextBeat;
                         } else {
                             /* Fragment would be too tiny; fall back to barline. */
