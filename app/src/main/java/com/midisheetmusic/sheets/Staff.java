@@ -158,10 +158,7 @@ public class Staff {
         }
         above = Math.max(above, clefsym.getAboveStaff());
         below = Math.max(below, clefsym.getBelowStaff());
-        if (showMeasures) {
-            above = Math.max(above, SheetMusic.NoteHeight * 3);
-        }
-        if (swingLabel != null) {
+        if (showMeasures || swingLabel != null) {
             above = Math.max(above, SheetMusic.NoteHeight * 3);
         }
         if (showTrackLabels) {

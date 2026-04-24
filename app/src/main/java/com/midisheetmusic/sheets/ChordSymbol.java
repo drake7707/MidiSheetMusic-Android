@@ -914,7 +914,8 @@ public class ChordSymbol implements MusicSymbol {
          * sounding duration falls in [5/16, 3/8) of a quarter note — a range that
          * contains quarter/3 and no other standard note value — so this check is
          * correct and time-signature-independent for any beamed group of three. */
-        if (chords.length == 3 && firstStem.getDuration() == NoteDuration.Triplet) {
+        NoteDuration firstDur = firstStem.getDuration();
+        if (chords.length == 3 && firstDur != null && firstDur == NoteDuration.Triplet) {
             firstStem.setTriplet(true);
         }
     }
