@@ -1,0 +1,14 @@
+• Bump version code to 10 and version name to 2.7
+• Fix tie arc offset for notes with accidentals (sharp/flat/natural)
+• Fix spurious incoming tie arc drawn on every isTiedToPrev chord
+• Address code review comments: clarify y-formula comment, document MIN_ACCID_DIST=6, note ArrayList copy is O(small)"
+• Fix polyphonic crash, cross-row tie arcs, and note-circle centering
+• Address code review: document END_TOLERANCE and extract MIN_FRAGMENT constant
+• Fix swing label collision, tie arc erasure by cursor, and off-beat note splitting
+• Address code review: combine height guards, add null check for triplet duration
+• Add swing detection, swing marker, cross-measure note splitting, and tie arcs
+• Plan both swing marker and cross-measure tie implementations
+• Plan: add swing detection and marker
+• Plan updated: timing-based triplet detection
+• Add disclaimer on AI usage in README
+• path metadata
