@@ -42,6 +42,7 @@ import com.midisheetmusic.sheets.SymbolWidths;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.TreeSet;
 
 class BoxedInt {
     public int value;
