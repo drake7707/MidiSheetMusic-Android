@@ -43,7 +43,8 @@ public class ChordSymbol implements MusicSymbol {
     private Stem stem2;            /** The second stem of the chord. Can be null */
     private boolean hastwostems;   /** True if this chord has two stems */
     private SheetMusic sheetmusic; /** Used to get colors and other options */
-    private ArrayList<WhiteNote> tiedNotes; /** White-note positions tied forward to the next chord (may be null) */
+    private ArrayList<WhiteNote> tiedNotes;         /** White-note positions tied forward to the next chord (may be null) */
+    private ArrayList<WhiteNote> tiedFromPrevNotes; /** White-note positions tied from the previous chord (may be null) */
     private boolean tiedToPrev;    /** True if this chord is the continuation of a tie from the previous chord */
 
 
@@ -80,10 +81,21 @@ public class ChordSymbol implements MusicSymbol {
 
         /* Propagate tie flags from MidiNotes to this chord symbol. */
         tiedNotes = null;
+        tiedFromPrevNotes = null;
         tiedToPrev = false;
         for (MidiNote midi : midinotes) {
             if (midi.isTiedToPrev()) {
                 tiedToPrev = true;
+                /* Record which white-note positions are incoming so that
+                 * Staff.DrawTieArcs() can draw the matching half-arc from
+                 * the left margin when the source chord is on a prior staff row. */
+                for (NoteData nd : notedata) {
+                    if (nd.number == midi.getNumber()) {
+                        if (tiedFromPrevNotes == null) tiedFromPrevNotes = new ArrayList<>();
+                        tiedFromPrevNotes.add(nd.whitenote);
+                        break;
+                    }
+                }
             }
             if (midi.isTiedToNext()) {
                 /* Find the matching NoteData entry by MIDI number and record its white-note position. */
@@ -281,6 +293,42 @@ public class ChordSymbol implements MusicSymbol {
 
     /** Return true if this chord is the arrival end of a tie from the previous chord. */
     public boolean isTiedToPrev() { return tiedToPrev; }
+
+    /** Return the white-note positions (one per tied pitch) that are incoming from the
+     *  previous chord via a tie.  Null if no notes in this chord are tie continuations. */
+    public ArrayList<WhiteNote> getTiedFromPrevNotes() { return tiedFromPrevNotes; }
+
+    /** Compute the total pixel width used by the accidental symbols (without drawing).
+     *  Mirrors the logic in DrawAccid() but allocation-free. */
+    private int getAccidWidth() {
+        if (accidsymbols.length == 0) return 0;
+        int xpos = 0;
+        AccidSymbol prev = null;
+        for (AccidSymbol symbol : accidsymbols) {
+            if (prev != null && symbol.getNote().Dist(prev.getNote()) < 6) {
+                xpos += symbol.getWidth();
+            }
+            prev = symbol;
+        }
+        xpos += prev.getWidth();
+        return xpos;
+    }
+
+    /** Return the x pixel offset from this chord's slot start (as stored in Staff.xpos[])
+     *  to the right edge of the primary (leftmost) note head.
+     *  Use this to anchor the start of a tie arc leaving this chord. */
+    int getNoteXRight() {
+        return width - (2 * SheetMusic.NoteHeight + SheetMusic.NoteHeight * 3 / 4)
+                + getAccidWidth() + SheetMusic.LineSpace / 4 + SheetMusic.NoteWidth;
+    }
+
+    /** Return the x pixel offset from this chord's slot start (as stored in Staff.xpos[])
+     *  to the left edge of the primary (leftmost) note head.
+     *  Use this to anchor the end of a tie arc arriving at this chord. */
+    int getNoteXLeft() {
+        return width - (2 * SheetMusic.NoteHeight + SheetMusic.NoteHeight * 3 / 4)
+                + getAccidWidth() + SheetMusic.LineSpace / 4;
+    }
 
     /* Return the stem will the smallest duration.  This property
      * is used when making chord pairs (chords joined by a horizontal

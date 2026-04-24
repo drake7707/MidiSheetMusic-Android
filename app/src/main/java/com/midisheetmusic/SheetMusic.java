@@ -717,6 +717,9 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
     SplitCrossMeasureNotes(ArrayList<MidiTrack> tracks, TimeSignature time) {
         final int measureLen = time.getMeasure();
         final int quarter    = time.getQuarter();
+        /* Safety: both values must be positive (they always are for valid MIDI
+         * files, but guard against malformed files to avoid divide-by-zero). */
+        if (measureLen <= 0 || quarter <= 0) return;
         /* MIDI DAWs (e.g. Logic, GarageBand) routinely place Note-Off events
          * 1–2 ticks before the bar to avoid overlapping the next note.  Two
          * ticks is the de-facto maximum observed drift and keeps the tolerance
@@ -781,6 +784,16 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
                            notes.get(insertIdx).getStartTime() < splitPoint) {
                         insertIdx++;
                     }
+                    /* Also respect the ascending note-number order that
+                     * RoundStartTimes establishes for simultaneous notes.
+                     * Without this, multiple continuations at the same
+                     * splitPoint end up in reverse order, causing
+                     * ChordSymbol to throw IllegalArgumentException. */
+                    while (insertIdx < notes.size() &&
+                           notes.get(insertIdx).getStartTime() == splitPoint &&
+                           notes.get(insertIdx).getNumber() < cont.getNumber()) {
+                        insertIdx++;
+                    }
                     notes.add(insertIdx, cont);
                 }
                 i++;
@@ -816,6 +829,10 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
         int quarter   = time.getQuarter();
         int eighth    = quarter / 2;
         int tolerance = quarter / 8;
+
+        /* For very low quarternote values (malformed files) the sub-divisions
+         * collapse to zero, making modulo undefined — just bail out. */
+        if (eighth <= 0) return null;
 
         /* Collect all distinct note-on start times across every track.
          * De-duplicating simultaneous notes (chords) means we examine
