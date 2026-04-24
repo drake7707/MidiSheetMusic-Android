@@ -395,7 +395,7 @@ public class Stem {
                 canvas.drawLine(xstart, ystart, xend, yend, paint);
             }
 
-            if (isTriplet) {
+            if (isTriplet()) {
                 /* ystart/yend were incremented twice; recover the original beam y */
                 int ybeam = Math.min(
                         ytop + topstaff.Dist(end) * SheetMusic.NoteHeight/2,
@@ -443,7 +443,7 @@ public class Stem {
                 canvas.drawLine(xstart, ystart, xend, yend, paint);
             }
 
-            if (isTriplet) {
+            if (isTriplet()) {
                 /* ystart/yend were decremented twice; recover the original beam y */
                 int ybeam = Math.max(
                         ytop + topstaff.Dist(end) * SheetMusic.NoteHeight/2 + SheetMusic.NoteHeight,

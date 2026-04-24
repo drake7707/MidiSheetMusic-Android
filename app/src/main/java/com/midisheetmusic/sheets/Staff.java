@@ -60,6 +60,7 @@ public class Staff {
     private int endtime;                /** The time (in pulses) of last symbol */
     private int measureLength;          /** The time (in pulses) of a measure */
     private MidiOptions options;        /** The midi options (used for loop highlighting) */
+    private String swingLabel;          /** Swing marker text shown above the first staff, or null */
 
     /** Create a new staff with the given list of music symbols,
      * and the given key signature.  The clef is determined by
@@ -118,6 +119,11 @@ public class Staff {
      */
     public int getStartTime() { return starttime; }
 
+    /** Set the swing-feel label shown above this staff (e.g. "Swing" or "Swing (16ths)").
+     *  Pass null to clear. CalculateHeight() must be called afterwards to update spacing.
+     */
+    public void setSwingLabel(String label) { swingLabel = label; }
+
     /** Return the ending time of the staff, the endtime of
      *  the last symbol.  This is used during playback, to 
      *  automatically scroll the music while playing.
@@ -153,6 +159,9 @@ public class Staff {
         above = Math.max(above, clefsym.getAboveStaff());
         below = Math.max(below, clefsym.getBelowStaff());
         if (showMeasures) {
+            above = Math.max(above, SheetMusic.NoteHeight * 3);
+        }
+        if (swingLabel != null) {
             above = Math.max(above, SheetMusic.NoteHeight * 3);
         }
         if (showTrackLabels) {
@@ -475,11 +484,135 @@ public class Staff {
         if (showTrackLabels) {
             DrawTrackLabel(canvas, paint);
         }
+        if (swingLabel != null) {
+            DrawSwingMarker(canvas, paint);
+        }
         if (lyrics != null) {
             DrawLyrics(canvas, paint);
         }
-
+        DrawTieArcs(canvas, paint);
     }
+
+    /** Draw the swing-feel marker ("Swing" or "Swing (16ths)") above the top-left
+     *  of the staff, at the same vertical level as measure numbers.
+     */
+    private void DrawSwingMarker(Canvas canvas, Paint paint) {
+        float savedSize = paint.getTextSize();
+        paint.setTextSize(savedSize * 1.1f);
+        paint.setStyle(Paint.Style.FILL);
+        canvas.drawText(swingLabel,
+                        SheetMusic.LeftMargin,
+                        ytop - SheetMusic.NoteHeight * 2,
+                        paint);
+        paint.setTextSize(savedSize);
+    }
+
+    /** Draw tie arcs for all tied-forward chords in this staff.
+     *
+     *  A tie is a small curved arc that connects a note in one chord to the
+     *  same-pitch note in the immediately following chord.  It curves away from
+     *  the stem: below the note head when the stem points up, above when down.
+     *
+     *  For notes whose tied partner lives on the next staff row (cross-staff tie),
+     *  we draw a half-arc that tapers to the right edge of this staff instead.
+     */
+    private void DrawTieArcs(Canvas canvas, Paint paint) {
+        /* Collect the x-position of every symbol so we can look ahead without
+         * re-traversing the list. */
+        int[] xpos = new int[symbols.size()];
+        int x = keysigWidth;
+        for (int i = 0; i < symbols.size(); i++) {
+            xpos[i] = x;
+            x += symbols.get(i).getWidth();
+        }
+
+        Paint.Style savedStyle = paint.getStyle();
+        float savedStroke = paint.getStrokeWidth();
+        int savedColor = paint.getColor();
+
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(1.5f);
+        paint.setColor(Color.BLACK);
+
+        for (int i = 0; i < symbols.size(); i++) {
+            if (!(symbols.get(i) instanceof ChordSymbol)) continue;
+            ChordSymbol chord = (ChordSymbol) symbols.get(i);
+            if (!chord.hasTie()) continue;
+
+            /* Find the paired (tiedToPrev) chord in this same staff. */
+            int partnerIdx = -1;
+            for (int j = i + 1; j < symbols.size(); j++) {
+                if (symbols.get(j) instanceof ChordSymbol) {
+                    ChordSymbol next = (ChordSymbol) symbols.get(j);
+                    if (next.isTiedToPrev()) {
+                        partnerIdx = j;
+                    }
+                    break; /* stop at the first ChordSymbol regardless */
+                }
+            }
+
+            /* Compute the topmost white note of the staff for y-coordinate maths. */
+            WhiteNote topstaff = WhiteNote.Top(chord.getClef());
+
+            /* Draw one arc per tied-note position. */
+            for (WhiteNote wn : chord.getTiedNotes()) {
+                int ynote = ytop + topstaff.Dist(wn) * SheetMusic.NoteHeight / 2
+                            + SheetMusic.NoteHeight / 2;   /* centre of note head */
+
+                /* Stem direction determines arc direction: stem-up → tie below, stem-down → tie above. */
+                boolean tieBelow = (chord.getStem() == null ||
+                                    chord.getStem().getDirection() == com.midisheetmusic.sheets.Stem.Up);
+
+                int x1 = xpos[i] + SheetMusic.NoteWidth;
+                int x2;
+                boolean halfArc;
+                if (partnerIdx >= 0) {
+                    x2 = xpos[partnerIdx];
+                    halfArc = false;
+                } else {
+                    /* Partner is on the next staff row — draw a half-arc to the right margin. */
+                    x2 = width - SheetMusic.NoteWidth;
+                    halfArc = true;
+                }
+
+                drawTieArc(canvas, paint, x1, x2, ynote, tieBelow, halfArc);
+            }
+        }
+
+        paint.setStyle(savedStyle);
+        paint.setStrokeWidth(savedStroke);
+        paint.setColor(savedColor);
+    }
+
+    /** Draw a single bezier tie arc from (x1, y) to (x2, y).
+     *  @param tieBelow  True → arc bows downward; false → arc bows upward.
+     *  @param halfArc   True → taper the right end so it does not fully close
+     *                   (used when the partner note is on the next staff row).
+     */
+    private static void drawTieArc(Canvas canvas, Paint paint,
+                                    int x1, int x2, int y,
+                                    boolean tieBelow, boolean halfArc) {
+        int span = x2 - x1;
+        if (span <= 0) return;
+
+        /* Bow height: clamp between 4 and 14 px, proportional to span. */
+        int bow = Math.max(4, Math.min(14, span / 5));
+        if (!tieBelow) bow = -bow;
+
+        Path path = new Path();
+        path.moveTo(x1, y);
+        if (halfArc) {
+            /* Single control point — arc fades out toward the right */
+            path.quadTo(x1 + span * 0.6f, y + bow, x2, y + bow / 2.0f);
+        } else {
+            /* Symmetric cubic bezier */
+            path.cubicTo(x1 + span / 3.0f, y + bow,
+                         x2 - span / 3.0f, y + bow,
+                         x2, y);
+        }
+        canvas.drawPath(path, paint);
+    }
+
 
     public MusicSymbol getCurrentNote(int currentPulseTime, TimeSignature sig) {
         for (int i = 0; i < symbols.size(); ++i) {

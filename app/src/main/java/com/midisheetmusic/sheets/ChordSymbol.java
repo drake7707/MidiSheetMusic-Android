@@ -43,6 +43,8 @@ public class ChordSymbol implements MusicSymbol {
     private Stem stem2;            /** The second stem of the chord. Can be null */
     private boolean hastwostems;   /** True if this chord has two stems */
     private SheetMusic sheetmusic; /** Used to get colors and other options */
+    private ArrayList<WhiteNote> tiedNotes; /** White-note positions tied forward to the next chord (may be null) */
+    private boolean tiedToPrev;    /** True if this chord is the continuation of a tie from the previous chord */
 
 
     /** Create a new Chord Symbol from the given list of midi notes.
@@ -75,6 +77,25 @@ public class ChordSymbol implements MusicSymbol {
 
         notedata = CreateNoteData(midinotes, key, time);
         accidsymbols = CreateAccidSymbols(notedata, clef);
+
+        /* Propagate tie flags from MidiNotes to this chord symbol. */
+        tiedNotes = null;
+        tiedToPrev = false;
+        for (MidiNote midi : midinotes) {
+            if (midi.isTiedToPrev()) {
+                tiedToPrev = true;
+            }
+            if (midi.isTiedToNext()) {
+                /* Find the matching NoteData entry by MIDI number and record its white-note position. */
+                for (NoteData nd : notedata) {
+                    if (nd.number == midi.getNumber()) {
+                        if (tiedNotes == null) tiedNotes = new ArrayList<>();
+                        tiedNotes.add(nd.whitenote);
+                        break;
+                    }
+                }
+            }
+        }
 
 
         /* Find out how many stems we need (1 or 2) */
@@ -251,6 +272,15 @@ public class ChordSymbol implements MusicSymbol {
 
     /** Return true if this chord has two stems */
     public boolean getHasTwoStems() { return hastwostems; }
+
+    /** Return true if this chord carries a forward tie to the next chord. */
+    public boolean hasTie() { return tiedNotes != null && !tiedNotes.isEmpty(); }
+
+    /** Return the white-note positions (one per tied pitch) that are tied to the next chord. */
+    public ArrayList<WhiteNote> getTiedNotes() { return tiedNotes; }
+
+    /** Return true if this chord is the arrival end of a tie from the previous chord. */
+    public boolean isTiedToPrev() { return tiedToPrev; }
 
     /* Return the stem will the smallest duration.  This property
      * is used when making chord pairs (chords joined by a horizontal

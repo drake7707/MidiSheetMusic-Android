@@ -38,6 +38,8 @@ public class MidiNote implements Comparator<MidiNote> {
     private int channel;     /** The channel */
     private int notenumber;  /** The note, from 0 to 127. Middle C is 60 */
     private int duration;    /** The duration, in pulses */
+    private boolean tiedToNext; /** True if this note was split at a barline and continues in the next chord */
+    private boolean tiedToPrev; /** True if this note is the continuation of a split from the previous chord */
 
 
     /* Create a new MidiNote.  This is called when a NoteOn event is
@@ -65,6 +67,12 @@ public class MidiNote implements Comparator<MidiNote> {
     public int getDuration() { return duration; }
     public void setDuration(int value) { duration = value; }
 
+    public boolean isTiedToNext() { return tiedToNext; }
+    public void setTiedToNext(boolean value) { tiedToNext = value; }
+
+    public boolean isTiedToPrev() { return tiedToPrev; }
+    public void setTiedToPrev(boolean value) { tiedToPrev = value; }
+
     /* A NoteOff event occurs for this note at the given time.
      * Calculate the note duration based on the noteoff event.
      */
@@ -84,7 +92,10 @@ public class MidiNote implements Comparator<MidiNote> {
 
 
     public MidiNote Clone() {
-        return new MidiNote(starttime, channel, notenumber, duration);
+        MidiNote copy = new MidiNote(starttime, channel, notenumber, duration);
+        copy.tiedToNext = tiedToNext;
+        copy.tiedToPrev = tiedToPrev;
+        return copy;
     }
 
     @Override
