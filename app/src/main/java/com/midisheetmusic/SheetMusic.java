@@ -695,49 +695,83 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
     }
 
 
-    /** Split notes that cross a measure boundary into two adjacent notes of the
-     *  correct duration, marking them as tied.  This must be called on the
-     *  post-transformation note lists (after ChangeMidiNotes) so that the
-     *  chord and rest symbols are computed with proper per-measure durations.
+    /** Split notes that cross (or land within a tick of) a measure boundary into
+     *  two adjacent tied notes of the correct duration.
      *
-     *  After splitting, note1 (the part in the current measure) is marked
-     *  tiedToNext=true and note2 (the continuation) is marked tiedToPrev=true.
-     *  If note2 still crosses the next barline the process repeats until the
-     *  remaining duration fits inside one measure.
+     *  Two enhancements over a plain barline-crossing check:
+     *
+     *  1. Off-by-one snap: MIDI DAWs frequently place Note-Off events 1–2 ticks
+     *     before the bar to avoid overlap with the next note.  If a note ends
+     *     within {@code END_TOLERANCE} ticks of a barline it is silently extended
+     *     to reach that barline so that the split logic fires correctly.
+     *
+     *  2. Off-beat split: when a note does not start on a quarter-note beat and
+     *     its (possibly snapped) end reaches or crosses the barline, we split it
+     *     at the next quarter-note beat rather than at the barline itself.  This
+     *     converts e.g. a half note starting on the "and" of a beat into the
+     *     standard notation of (8th to beat) + (half note from beat), tied.
+     *     A minimum fragment length of quarter/8 is enforced so that notes
+     *     starting only a few ticks before a beat are left intact.
      */
     private static void
     SplitCrossMeasureNotes(ArrayList<MidiTrack> tracks, TimeSignature time) {
-        int measureLen = time.getMeasure();
+        final int measureLen = time.getMeasure();
+        final int quarter    = time.getQuarter();
+        final int END_TOLERANCE = 2;   /* ticks; absorbs DAW off-by-one Note-Offs */
+
         for (MidiTrack track : tracks) {
             ArrayList<MidiNote> notes = track.getNotes();
             int i = 0;
             while (i < notes.size()) {
-                MidiNote note = notes.get(i);
-                int measureStart = (note.getStartTime() / measureLen) * measureLen;
-                int measureEnd   = measureStart + measureLen;
+                MidiNote note     = notes.get(i);
+                int noteStart     = note.getStartTime();
+                int measureEnd    = ((noteStart / measureLen) + 1) * measureLen;
 
-                if (note.getEndTime() > measureEnd) {
-                    /* Shorten this note to end at the barline */
-                    int firstDur = measureEnd - note.getStartTime();
-                    int remaining = note.getEndTime() - measureEnd;
+                /* ---- Step 1: snap note end to nearby barline ---- */
+                int noteEnd = note.getEndTime();
+                if (noteEnd < measureEnd && (measureEnd - noteEnd) <= END_TOLERANCE) {
+                    note.setDuration(measureEnd - noteStart);
+                    noteEnd = note.getEndTime();
+                }
+
+                /* ---- Step 2: determine split point ---- */
+                int splitPoint = -1;
+                if (noteEnd >= measureEnd) {
+                    if (noteStart % quarter != 0) {
+                        /* Note starts off a quarter-beat: split at the next beat so
+                         * that the leading fragment can be expressed as a clean note
+                         * value (e.g. 8th) and the continuation starts on the beat. */
+                        int nextBeat = ((noteStart / quarter) + 1) * quarter;
+                        if (nextBeat - noteStart >= quarter / 8) {
+                            /* Fragment is long enough to be a meaningful note. */
+                            splitPoint = nextBeat;
+                        } else {
+                            /* Fragment would be too tiny; fall back to barline. */
+                            splitPoint = measureEnd;
+                        }
+                    } else {
+                        /* Note starts on a beat: split at the barline as usual. */
+                        splitPoint = measureEnd;
+                    }
+                }
+
+                /* ---- Step 3: perform split if valid ---- */
+                if (splitPoint > noteStart && splitPoint < noteEnd) {
+                    int firstDur = splitPoint - noteStart;
+                    int contDur  = noteEnd - splitPoint;
                     note.setDuration(firstDur);
                     note.setTiedToNext(true);
 
-                    /* Create the continuation note at the start of the next measure */
-                    MidiNote cont = new MidiNote(measureEnd, note.getChannel(),
-                                                 note.getNumber(), remaining);
+                    MidiNote cont = new MidiNote(splitPoint, note.getChannel(),
+                                                 note.getNumber(), contDur);
                     cont.setTiedToPrev(true);
 
-                    /* Insert it in start-time order (just after all notes that start before measureEnd) */
                     int insertIdx = i + 1;
                     while (insertIdx < notes.size() &&
-                           notes.get(insertIdx).getStartTime() < measureEnd) {
+                           notes.get(insertIdx).getStartTime() < splitPoint) {
                         insertIdx++;
                     }
                     notes.add(insertIdx, cont);
-                    /* Do NOT advance i: the note we just processed was already shortened;
-                     * advance past it to the next original note (the continuation will
-                     * be reached at insertIdx and re-examined if it still spans a barline). */
                 }
                 i++;
             }

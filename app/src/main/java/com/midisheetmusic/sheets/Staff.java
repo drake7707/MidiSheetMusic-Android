@@ -164,6 +164,12 @@ public class Staff {
         if (showTrackLabels) {
             above = Math.max(above, SheetMusic.NoteHeight * 2);
         }
+        /* When both a swing label and track labels are active they would overlap
+         * at NoteHeight*2 and NoteHeight respectively.  Reserve an extra row so
+         * the swing label can sit one row higher than the track label. */
+        if (swingLabel != null && showTrackLabels) {
+            above = Math.max(above, SheetMusic.NoteHeight * 4);
+        }
         ytop = above + SheetMusic.NoteHeight;
         height = SheetMusic.NoteHeight*5 + ytop + below;
         if (lyrics != null) {
@@ -492,14 +498,20 @@ public class Staff {
 
     /** Draw the swing-feel marker ("Swing" or "Swing (16ths)") above the top-left
      *  of the staff, at the same vertical level as measure numbers.
+     *  When track labels are also shown it moves one row higher to avoid overlap.
      */
     private void DrawSwingMarker(Canvas canvas, Paint paint) {
         float savedSize = paint.getTextSize();
         paint.setTextSize(savedSize * 1.1f);
         paint.setStyle(Paint.Style.FILL);
+        /* If track labels are visible they occupy ytop - NoteHeight.  Push the
+         * swing marker one row further up so the two texts don't collide. */
+        int ySwing = showTrackLabels
+                ? ytop - SheetMusic.NoteHeight * 3
+                : ytop - SheetMusic.NoteHeight * 2;
         canvas.drawText(swingLabel,
                         SheetMusic.LeftMargin,
-                        ytop - SheetMusic.NoteHeight * 2,
+                        ySwing,
                         paint);
         paint.setTextSize(savedSize);
     }
@@ -782,6 +794,7 @@ public class Staff {
                 if (lyrics != null) {
                     DrawLyrics(canvas, paint);
                 }
+                DrawTieArcs(canvas, paint);
             }
             if (curr instanceof ChordSymbol) {
                 ChordSymbol chord = (ChordSymbol) curr;
