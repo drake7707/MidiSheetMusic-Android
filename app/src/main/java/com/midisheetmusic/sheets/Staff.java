@@ -580,8 +580,11 @@ public class Staff {
                 int x1 = xpos[i] + chord.getNoteXRight();
 
                 for (WhiteNote wn : chord.getTiedNotes()) {
-                    /* Centre of note head y: topstaff.Dist * NoteHeight/2 gives the top
-                     * of the note row; subtract LineWidth and add NoteHeight/2 for centre. */
+                    /* Centre of note head y.  DrawNotes translates the canvas to:
+                     *   (xnote + NoteWidth/2 + 1,  ynote - LineWidth + NoteHeight/2)
+                     * where ynote = ytop + topstaff.Dist(wn) * NoteHeight/2.
+                     * So the visual centre y = ytop + Dist * NoteHeight/2
+                     *                                  - LineWidth + NoteHeight/2. */
                     int ynote = ytop + topstaff.Dist(wn) * SheetMusic.NoteHeight / 2
                                 - SheetMusic.LineWidth + SheetMusic.NoteHeight / 2;
 
@@ -608,7 +611,9 @@ public class Staff {
                 /* For each incoming tied note, check whether any earlier chord in THIS
                  * staff is the source (i.e., has that white note in its tiedNotes list).
                  * If no same-staff source exists the source chord is on the previous row
-                 * and we draw an incoming half-arc from the left margin. */
+                 * and we draw an incoming half-arc from the left margin.
+                 * Note: getTiedFromPrevNotes() returns at most one entry per pitch (1–4
+                 * typically), so copying the list here is negligible. */
                 ArrayList<WhiteNote> unresolved = new ArrayList<>(chord.getTiedFromPrevNotes());
                 for (int j = 0; j < i && !unresolved.isEmpty(); j++) {
                     if (symbols.get(j) instanceof ChordSymbol) {

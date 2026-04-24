@@ -299,12 +299,18 @@ public class ChordSymbol implements MusicSymbol {
     public ArrayList<WhiteNote> getTiedFromPrevNotes() { return tiedFromPrevNotes; }
 
     /** Compute the total pixel width used by the accidental symbols (without drawing).
-     *  Mirrors the logic in DrawAccid() but allocation-free. */
+     *  Mirrors the logic in DrawAccid() but allocation-free.
+     *  The threshold of 6 note-positions between adjacent accidentals mirrors the
+     *  value used in DrawAccid() and getMinWidth(): two accidentals that are fewer
+     *  than 6 white-note positions apart overlap vertically and must be staggered
+     *  horizontally, requiring extra width. */
     private int getAccidWidth() {
         if (accidsymbols.length == 0) return 0;
         int xpos = 0;
         AccidSymbol prev = null;
         for (AccidSymbol symbol : accidsymbols) {
+            /* Shift right only when consecutive accidentals are close enough
+             * to overlap vertically (fewer than 6 white-note positions apart). */
             if (prev != null && symbol.getNote().Dist(prev.getNote()) < 6) {
                 xpos += symbol.getWidth();
             }
