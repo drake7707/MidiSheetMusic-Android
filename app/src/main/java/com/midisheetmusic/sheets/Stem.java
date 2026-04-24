@@ -55,6 +55,7 @@ public class Stem {
     private int width_to_pair;      /** The width (in pixels) to the chord pair */
     private boolean receiver_in_pair;  /** This stem is the receiver of a horizontal
                                     * beam stem from another chord. */
+    private boolean isTriplet;      /** True if this stem is the start of a beamed triplet group */
 
     /** Get/Set the direction of the stem (Up or Down) */
     public int getDirection() { return direction; }
@@ -82,6 +83,12 @@ public class Stem {
     public boolean getReceiver() { return receiver_in_pair; }
     public void setReceiver(boolean value) { receiver_in_pair = value; }
 
+    /** Get/Set whether this stem is the start of a beamed triplet group.
+     * When true, DrawHorizBarStem will render a triplet bracket with "3".
+     */
+    public boolean isTriplet() { return isTriplet; }
+    public void setTriplet(boolean value) { isTriplet = value; }
+
     /** Create a new stem.  The top note, bottom note, and direction are 
      * needed for drawing the vertical line of the stem.  The duration is 
      * needed to draw the tail of the stem.  The overlap boolean is true
@@ -104,6 +111,7 @@ public class Stem {
         pair = null;
         width_to_pair = 0;
         receiver_in_pair = false;
+        isTriplet = false;
     }
 
     /** Calculate the vertical position (white note key) where 
