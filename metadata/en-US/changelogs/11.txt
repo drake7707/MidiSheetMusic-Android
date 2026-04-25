@@ -1,0 +1,15 @@
+• Bump versionCode to 11 and versionName to 2.8
+• align multiple rests to beats, fix crash when toggling beats markers while playing
+• sixteenth rests were somehow not implemented? Even though many of the examples like fur elise uses them
+• align start times of notes on 32th notes because otherwise it won't exactly match rests on other staffs.
+• Fix beat-1 marker offset: use chord-centre formula for RestSymbol too
+• Fix beat markers: include BlankSymbols, cap loop at last symbol time
+• Remove height attributes from image tags in README
+• Fix beat marker: skip BarSymbols, centre ticks on note heads
+• Fix beat marker alignment and draw order
+• Add Show Beat Markers option with beat 1 on first note of measure
+• Address code review: fix hasMixedOuterSixteenths, add clarifying comments
+• Extend mixed-duration 3-chord beaming to 8th+16th+16th and 16th+16th+8th patterns
+• Address code review: rename field, extract named constants
+• Add staccato dots and 16th+8th+16th mixed beam rendering
+• Fix aggressive note splitting for notes that end exactly at the barline
