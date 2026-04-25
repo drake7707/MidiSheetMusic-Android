@@ -482,9 +482,11 @@ public class SheetMusicActivity extends MidiHandlingActivity {
                 player.reshadeSheet();
                 return true;
             case KeyEvent.KEYCODE_B:
-                options.showBeatMarkers = !options.showBeatMarkers;
-                switchShowBeatMarkers.setChecked(options.showBeatMarkers);
-                createSheetMusic(options);
+                if(!player.isPlaying()) {
+                    options.showBeatMarkers = !options.showBeatMarkers;
+                    switchShowBeatMarkers.setChecked(options.showBeatMarkers);
+                    createSheetMusic(options);
+                }
                 return true;
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_NUMPAD_ADD:

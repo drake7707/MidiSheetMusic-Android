@@ -481,6 +481,7 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
             return null;
 
         NoteDuration dur = time.GetNoteDuration(end - start);
+        float beat = time.getBeatInMeasure(start);
         switch (dur) {
             case Whole:
             case Half:
@@ -492,26 +493,50 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
                 return result;
 
             case DottedHalf:
-                r1 = new RestSymbol(start, NoteDuration.Half);
-                r2 = new RestSymbol(start + time.getQuarter()*2, 
-                                    NoteDuration.Quarter);
-                result = new RestSymbol[]{ r1, r2 };
-                return result;
+                if(beat != Math.floor(beat)) { // if not aligned on the beat, do the 4th first, then the half
+                    r1 = new RestSymbol(start, NoteDuration.Quarter);
+                    r2 = new RestSymbol(start + time.getQuarter(),
+                            NoteDuration.Half);
+                    result = new RestSymbol[]{r1, r2};
+                    return result;
+                } else {
+                    r1 = new RestSymbol(start, NoteDuration.Half);
+                    r2 = new RestSymbol(start + time.getQuarter() * 2,
+                            NoteDuration.Quarter);
+                    result = new RestSymbol[]{r1, r2};
+                    return result;
+                }
 
             case DottedQuarter:
-                r1 = new RestSymbol(start, NoteDuration.Quarter);
-                r2 = new RestSymbol(start + time.getQuarter(), 
-                                    NoteDuration.Eighth);
-                result = new RestSymbol[]{ r1, r2 };
-                return result; 
+                if(beat != Math.floor(beat)) { // if not aligned on the beat, do the 8th first, then the 4th
+                    r1 = new RestSymbol(start, NoteDuration.Eighth);
+                    r2 = new RestSymbol(start + time.getQuarter() /2,
+                            NoteDuration.Quarter);
+                    result = new RestSymbol[]{r1, r2};
+                    return result;
+                } else {
+                    r1 = new RestSymbol(start, NoteDuration.Quarter);
+                    r2 = new RestSymbol(start + time.getQuarter(),
+                            NoteDuration.Eighth);
+                    result = new RestSymbol[]{r1, r2};
+                    return result;
+                }
 
             case DottedEighth:
-                r1 = new RestSymbol(start, NoteDuration.Eighth);
-                r2 = new RestSymbol(start + time.getQuarter()/2, 
-                                    NoteDuration.Sixteenth);
-                result = new RestSymbol[]{ r1, r2 };
-                return result;
 
+                if(beat != Math.floor(beat)) { // if not aligned on the beat, do the 16th first, then the 8th
+                    r1 = new RestSymbol(start, NoteDuration.Sixteenth);
+                    r2 = new RestSymbol(start + time.getQuarter() / 4,
+                            NoteDuration.Eighth);
+                    result = new RestSymbol[]{r1, r2};
+                    return result;
+                } else {
+                    r1 = new RestSymbol(start, NoteDuration.Eighth);
+                    r2 = new RestSymbol(start + time.getQuarter() / 2,
+                            NoteDuration.Sixteenth);
+                    result = new RestSymbol[]{r1, r2};
+                    return result;
+                }
             default:
                 return null;
         }
