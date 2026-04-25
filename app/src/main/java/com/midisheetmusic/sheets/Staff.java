@@ -385,7 +385,12 @@ public class Staff {
          *                      lands at the same x as the real head in the other track.
          *                      Falls back to slot centre if the slot is narrower than a
          *                      chord's minimum width (should not normally happen).
-         *   For RestSymbol   – use slot centre (width/2).
+         *   For RestSymbol   – use the same chord-centre formula as BlankSymbol.
+         *                      RestSymbol.getMinWidth() (20px) is 2px narrower than a plain
+         *                      ChordSymbol (22px), so slot-centre (width/2) gives xpos+11
+         *                      while the chord head in the other track is at xpos+6.  Using
+         *                      the chord-centre formula aligns beat-1 ticks with the note
+         *                      head that sits directly below the rest in the other staff.
          */
         int count = 0;
         for (MusicSymbol s : symbols) {
@@ -408,23 +413,20 @@ public class Staff {
                 symTimes[idx]   = s.getStartTime();
                 symCenterX[idx] = xpos + chord.getNoteXLeft() + SheetMusic.NoteWidth / 2;
                 idx++;
-            } else if (s instanceof BlankSymbol) {
+            } else if (s instanceof BlankSymbol || s instanceof RestSymbol) {
                 symTimes[idx] = s.getStartTime();
                 int w = s.getWidth();
-                /* Apply the same right-aligned note-head formula used by ChordSymbol so
-                 * that the tick lands at the same x as the note head in the other track.
-                 * The formula can be negative when the slot is narrower than a chord's
-                 * minimum, so fall back to the slot centre in that edge case. */
+                /* Apply the same right-aligned note-head formula used by ChordSymbol.
+                 * RestSymbol.getMinWidth() is 2px narrower than a plain chord, so using
+                 * slot-centre (w/2) displaces the tick from the chord head in the other
+                 * track by ~5px.  The chord-centre formula corrects this.
+                 * Falls back to slot centre for abnormally narrow slots. */
                 if (w >= chordMinWidth) {
                     symCenterX[idx] = xpos + w - chordMinWidth
                             + SheetMusic.LineSpace / 4 + SheetMusic.NoteWidth / 2;
                 } else {
                     symCenterX[idx] = xpos + w / 2;
                 }
-                idx++;
-            } else if (s instanceof RestSymbol) {
-                symTimes[idx]   = s.getStartTime();
-                symCenterX[idx] = xpos + s.getWidth() / 2;
                 idx++;
             }
             xpos += s.getWidth();
