@@ -42,6 +42,12 @@ public class Stem {
     public static final int LeftSide = 1;  /* The stem is to the left of the note */
     public static final int RightSide = 2; /* The stem is to the right of the note */
 
+    /** Constants for partial secondary-beam rendering in mixed-duration 3-chord groups. */
+    public static final int PARTIAL_BEAM_NONE      = 0; /* no partial beam — draw normally */
+    public static final int PARTIAL_BEAM_BOTH_ENDS = 1; /* 16th+8th+16th: short stubs at each end */
+    public static final int PARTIAL_BEAM_RIGHT     = 2; /* 8th+16th+16th:  right-half 16th beam */
+    public static final int PARTIAL_BEAM_LEFT      = 3; /* 16th+16th+8th:  left-half 16th beam */
+
     private NoteDuration duration; /** Duration of the stem. */
     private int direction;         /** Up, Down, or None */
     private WhiteNote top;         /** Topmost note in chord */
@@ -56,6 +62,8 @@ public class Stem {
     private boolean receiver_in_pair;  /** This stem is the receiver of a horizontal
                                     * beam stem from another chord. */
     private boolean tripletBeam;    /** True if this stem is the start of a beamed triplet group */
+    private int partialSixteenthBeam; /** One of the PARTIAL_BEAM_* constants; controls how the
+                                        * secondary 16th beam is drawn for mixed-duration 3-chord groups. */
 
     /** Get/Set the direction of the stem (Up or Down) */
     public int getDirection() { return direction; }
@@ -89,6 +97,20 @@ public class Stem {
     public boolean isTriplet() { return tripletBeam; }
     public void setTriplet(boolean value) { tripletBeam = value; }
 
+    /** Get/Set the partial secondary-beam rendering mode for this leading stem.
+     *  One of the PARTIAL_BEAM_* constants.  Used by DrawHorizBarStem to
+     *  render 16th-level beams correctly for mixed-duration 3-chord groups.
+     */
+    public int getPartialSixteenthBeam() { return partialSixteenthBeam; }
+    public void setPartialSixteenthBeam(int value) { partialSixteenthBeam = value; }
+
+    /** Convenience: returns true when this stem has any partial-16th-beam mode set
+     *  (PARTIAL_BEAM_BOTH_ENDS, PARTIAL_BEAM_RIGHT, or PARTIAL_BEAM_LEFT).
+     */
+    public boolean hasMixedOuterSixteenths() {
+        return partialSixteenthBeam != PARTIAL_BEAM_NONE;
+    }
+
     /** Create a new stem.  The top note, bottom note, and direction are 
      * needed for drawing the vertical line of the stem.  The duration is 
      * needed to draw the tail of the stem.  The overlap boolean is true
@@ -112,6 +134,7 @@ public class Stem {
         width_to_pair = 0;
         receiver_in_pair = false;
         tripletBeam = false;
+        partialSixteenthBeam = PARTIAL_BEAM_NONE;
     }
 
     /** Calculate the vertical position (white note key) where 
@@ -383,10 +406,35 @@ public class Stem {
                 canvas.drawLine(x, y, xend, yend, paint);
             }
 
+            /* For 8th+16th+16th: add a right-half 16th secondary beam even though the
+             * leading stem's duration is Eighth (so the normal Sixteenth check won't fire). */
+            if (partialSixteenthBeam == PARTIAL_BEAM_RIGHT && xend > xstart) {
+                int xmid = xstart + (xend - xstart) / 2;
+                double slope = (double)(yend - ystart) / (xend - xstart);
+                int ymid = ystart + (int)(slope * (xmid - xstart));
+                canvas.drawLine(xmid, ymid, xend, yend, paint);
+            }
+
             if (duration == NoteDuration.Sixteenth ||
                 duration == NoteDuration.ThirtySecond) {
 
-                canvas.drawLine(xstart, ystart, xend, yend, paint);
+                if (partialSixteenthBeam == PARTIAL_BEAM_BOTH_ENDS && xend > xstart) {
+                    /* 16th+8th+16th: short stubs at each outer position */
+                    int partialLen = SheetMusic.NoteHeight;
+                    double slope = (double)(yend - ystart) / (xend - xstart);
+                    canvas.drawLine(xstart, ystart,
+                            xstart + partialLen, (int)(ystart + slope * partialLen), paint);
+                    canvas.drawLine(xend - partialLen,
+                            (int)(yend - slope * partialLen), xend, yend, paint);
+                } else if (partialSixteenthBeam == PARTIAL_BEAM_LEFT && xend > xstart) {
+                    /* 16th+16th+8th: left-half 16th beam from first note to midpoint */
+                    int xmid = xstart + (xend - xstart) / 2;
+                    double slope = (double)(yend - ystart) / (xend - xstart);
+                    int ymid = ystart + (int)(slope * (xmid - xstart));
+                    canvas.drawLine(xstart, ystart, xmid, ymid, paint);
+                } else {
+                    canvas.drawLine(xstart, ystart, xend, yend, paint);
+                }
             }
             ystart += SheetMusic.NoteHeight;
             yend += SheetMusic.NoteHeight;
@@ -431,10 +479,35 @@ public class Stem {
                 canvas.drawLine(x, y, xend, yend, paint);
             }
 
+            /* For 8th+16th+16th: add a right-half 16th secondary beam even though the
+             * leading stem's duration is Eighth (so the normal Sixteenth check won't fire). */
+            if (partialSixteenthBeam == PARTIAL_BEAM_RIGHT && xend > xstart) {
+                int xmid = xstart + (xend - xstart) / 2;
+                double slope = (double)(yend - ystart) / (xend - xstart);
+                int ymid = ystart + (int)(slope * (xmid - xstart));
+                canvas.drawLine(xmid, ymid, xend, yend, paint);
+            }
+
             if (duration == NoteDuration.Sixteenth ||
                 duration == NoteDuration.ThirtySecond) {
 
-                canvas.drawLine(xstart, ystart, xend, yend, paint);
+                if (partialSixteenthBeam == PARTIAL_BEAM_BOTH_ENDS && xend > xstart) {
+                    /* 16th+8th+16th: short stubs at each outer position */
+                    int partialLen = SheetMusic.NoteHeight;
+                    double slope = (double)(yend - ystart) / (xend - xstart);
+                    canvas.drawLine(xstart, ystart,
+                            xstart + partialLen, (int)(ystart + slope * partialLen), paint);
+                    canvas.drawLine(xend - partialLen,
+                            (int)(yend - slope * partialLen), xend, yend, paint);
+                } else if (partialSixteenthBeam == PARTIAL_BEAM_LEFT && xend > xstart) {
+                    /* 16th+16th+8th: left-half 16th beam from first note to midpoint */
+                    int xmid = xstart + (xend - xstart) / 2;
+                    double slope = (double)(yend - ystart) / (xend - xstart);
+                    int ymid = ystart + (int)(slope * (xmid - xstart));
+                    canvas.drawLine(xstart, ystart, xmid, ymid, paint);
+                } else {
+                    canvas.drawLine(xstart, ystart, xend, yend, paint);
+                }
             }
             ystart -= SheetMusic.NoteHeight;
             yend -= SheetMusic.NoteHeight;

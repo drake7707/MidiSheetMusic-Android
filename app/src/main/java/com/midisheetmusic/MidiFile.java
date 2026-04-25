@@ -1932,6 +1932,15 @@ public class MidiFile {
 
                     dur = note1.getDuration();
                 }
+
+                /* Save the original MIDI sounding duration before extending.
+                 * A soundingDuration of 0 (the default) is the sentinel meaning
+                 * "RoundDurations did not extend this note", so only set it when
+                 * we are actually about to lengthen the note.
+                 * ChordSymbol uses this later to detect staccato articulation. */
+                if (dur > note1.getDuration()) {
+                    note1.setSoundingDuration(note1.getDuration());
+                }
                 note1.setDuration(dur);
                 if (track.getNotes().get(i+1).getStartTime() != note1.getStartTime()) {
                     prevNote = note1;

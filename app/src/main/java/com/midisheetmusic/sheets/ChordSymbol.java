@@ -33,6 +33,14 @@ import com.midisheetmusic.TimeSignature;
  * quarter note, and another is an eighth note).
  */
 public class ChordSymbol implements MusicSymbol {
+    /** A note is considered staccato when its sounding duration is at most
+     *  1/STACCATO_RATIO of the notated (rounded) duration.  A ratio of 2
+     *  means the note must sound for ≤ 50% of its written value. */
+    private static final int STACCATO_RATIO = 2;
+
+    /** Radius (in pixels) of the staccato dot drawn next to a note head. */
+    private static final int STACCATO_DOT_RADIUS = 2;
+
     private Clef clef;             /** Which clef the chord is being drawn in */
     private int starttime;         /** The time (in pulses) the notes occurs at */
     private int endtime;           /** The starttime plus the longest note duration */
@@ -46,6 +54,7 @@ public class ChordSymbol implements MusicSymbol {
     private ArrayList<WhiteNote> tiedNotes;         /** White-note positions tied forward to the next chord (may be null) */
     private ArrayList<WhiteNote> tiedFromPrevNotes; /** White-note positions tied from the previous chord (may be null) */
     private boolean tiedToPrev;    /** True if this chord is the continuation of a tie from the previous chord */
+    private boolean staccato;      /** True if this chord should be rendered with a staccato dot */
 
 
     /** Create a new Chord Symbol from the given list of midi notes.
@@ -167,6 +176,32 @@ public class ChordSymbol implements MusicSymbol {
             stem2 = null;
 
         width = getMinWidth();
+
+        /* Detect staccato: chord is staccato when every non-tied note was
+         * extended by RoundDurations to at least twice its actual sounding
+         * duration, indicating the performer released the key well before the
+         * next note onset. */
+        staccato = computeStaccato(midinotes);
+    }
+
+    /** Return true if every non-tied note in the chord has a sounding duration
+     *  that is at most half the notated (rounded) duration.  A zero
+     *  soundingDuration means RoundDurations did not extend the note, so it
+     *  is not considered staccato.
+     */
+    private static boolean computeStaccato(ArrayList<MidiNote> midinotes) {
+        int eligible = 0;
+        int staccatoCount = 0;
+        for (MidiNote note : midinotes) {
+            if (note.isTiedToPrev()) continue;
+            eligible++;
+            int sounding = note.getSoundingDuration();
+            int notated  = note.getDuration();
+            if (sounding > 0 && sounding * STACCATO_RATIO <= notated) {
+                staccatoCount++;
+            }
+        }
+        return eligible > 0 && staccatoCount == eligible;
     }
 
 
@@ -587,8 +622,55 @@ public class ChordSymbol implements MusicSymbol {
         if (stem2 != null)
             stem2.Draw(canvas, paint, ytop, topstaff);
 
+        /* Draw a staccato dot if the chord was played much shorter than written. */
+        if (staccato) {
+            DrawStaccato(canvas, paint, ytop, topstaff);
+        }
+
         canvas.translate(-xpos, 0);
         canvas.translate(-(getWidth() - getMinWidth()), 0);
+    }
+
+    /** Draw a staccato dot above or below the chord, on the note-head side
+     *  (opposite the stem direction).
+     *
+     *  The dot is a small filled circle centred horizontally on the note head
+     *  and placed one line-space outside the outermost note of the chord.
+     *
+     * @param ytop     The y location (in pixels) where the top of the staff starts.
+     * @param topstaff The white note at the top of the staff.
+     */
+    private void DrawStaccato(Canvas canvas, Paint paint, int ytop, WhiteNote topstaff) {
+        final int dotRadius = STACCATO_DOT_RADIUS;
+        final int gap = SheetMusic.LineSpace / 2;
+
+        /* x-centre: same as note head centre */
+        int xnote = SheetMusic.LineSpace / 4;
+        int xCenter = xnote + SheetMusic.NoteWidth / 2;
+
+        boolean stemUp = (stem1 != null && stem1.getDirection() == Stem.Up)
+                      || (stem1 == null && stem2 == null); /* whole notes: dot above */
+
+        int yCenter;
+        if (stemUp) {
+            /* Dot below the bottommost note head.
+             * notedata[0] is guaranteed to be the lowest (bottommost) note:
+             * CreateNoteData() fills notedata in ascending note-number order. */
+            int yBottom = ytop + topstaff.Dist(notedata[0].whitenote) * SheetMusic.NoteHeight / 2;
+            yCenter = yBottom + SheetMusic.NoteHeight + gap + dotRadius;
+        } else {
+            /* Dot above the topmost note head.
+             * notedata[notedata.length-1] is the highest note for the same reason. */
+            int yTop = ytop + topstaff.Dist(notedata[notedata.length - 1].whitenote) * SheetMusic.NoteHeight / 2;
+            yCenter = yTop - gap - dotRadius;
+        }
+
+        paint.setStyle(Paint.Style.FILL);
+        android.graphics.RectF rect = new android.graphics.RectF(
+                xCenter - dotRadius, yCenter - dotRadius,
+                xCenter + dotRadius, yCenter + dotRadius);
+        canvas.drawOval(rect, paint);
+        paint.setStyle(Paint.Style.STROKE);
     }
 
     /* Draw the accidental symbols.  If two symbols overlap (if they
@@ -794,6 +876,31 @@ public class ChordSymbol implements MusicSymbol {
             dotted8_to_16 = true;
         }
 
+        /* A 3-chord group of Sixteenth + Eighth + Sixteenth may be beamed
+         * together with partial 16th-note beams at the outer positions. */
+        boolean mixed_16_8_16 = false;
+        boolean mixed_8_16_16 = false;
+        boolean mixed_16_16_8 = false;
+        if (numChords == 3) {
+            Stem midStem = chords[1].getStem();
+            if (midStem != null) {
+                if (dur  == NoteDuration.Sixteenth &&
+                    midStem.getDuration() == NoteDuration.Eighth &&
+                    dur2 == NoteDuration.Sixteenth) {
+                    mixed_16_8_16 = true;
+                } else if (dur  == NoteDuration.Eighth &&
+                           midStem.getDuration() == NoteDuration.Sixteenth &&
+                           dur2 == NoteDuration.Sixteenth) {
+                    mixed_8_16_16 = true;
+                } else if (dur  == NoteDuration.Sixteenth &&
+                           midStem.getDuration() == NoteDuration.Sixteenth &&
+                           dur2 == NoteDuration.Eighth) {
+                    mixed_16_16_8 = true;
+                }
+            }
+        }
+        boolean anyMixed3 = mixed_16_8_16 || mixed_8_16_16 || mixed_16_16_8;
+
         if (dur == NoteDuration.Whole || dur == NoteDuration.Half ||
             dur == NoteDuration.DottedHalf || dur == NoteDuration.Quarter ||
             dur == NoteDuration.DottedQuarter ||
@@ -850,7 +957,8 @@ public class ChordSymbol implements MusicSymbol {
         else if (numChords == 3) {
             boolean valid = (dur == NoteDuration.Triplet) ||
                           (dur == NoteDuration.Eighth &&
-                           time.getNumerator() == 12 && time.getDenominator() == 8);
+                           time.getNumerator() == 12 && time.getDenominator() == 8) ||
+                          anyMixed3;
             if (!valid) {
                 return false;
             }
@@ -879,7 +987,7 @@ public class ChordSymbol implements MusicSymbol {
                 return false;
             if (chord.getStem() == null)
                 return false;
-            if (chord.getStem().getDuration() != dur && !dotted8_to_16)
+            if (chord.getStem().getDuration() != dur && !dotted8_to_16 && !anyMixed3)
                 return false;
             if (chord.getStem().IsBeam())
                 return false;
@@ -978,6 +1086,31 @@ public class ChordSymbol implements MusicSymbol {
         NoteDuration firstDur = firstStem.getDuration();
         if (chords.length == 3 && firstDur != null && firstDur == NoteDuration.Triplet) {
             firstStem.setTriplet(true);
+        }
+
+        /* For mixed-duration 3-chord groups, set the partial secondary-beam mode
+         * on the leading stem so DrawHorizBarStem renders the correct 16th flag. */
+        if (chords.length == 3) {
+            Stem midStem = chords[1].getStem();
+            NoteDuration lastDur = lastStem.getDuration();
+            if (midStem != null) {
+                if (firstDur == NoteDuration.Sixteenth &&
+                        midStem.getDuration() == NoteDuration.Eighth &&
+                        lastDur  == NoteDuration.Sixteenth) {
+                    /* 16th+8th+16th: short stubs at each outer end */
+                    firstStem.setPartialSixteenthBeam(Stem.PARTIAL_BEAM_BOTH_ENDS);
+                } else if (firstDur == NoteDuration.Eighth &&
+                        midStem.getDuration() == NoteDuration.Sixteenth &&
+                        lastDur  == NoteDuration.Sixteenth) {
+                    /* 8th+16th+16th: right-half 16th beam */
+                    firstStem.setPartialSixteenthBeam(Stem.PARTIAL_BEAM_RIGHT);
+                } else if (firstDur == NoteDuration.Sixteenth &&
+                        midStem.getDuration() == NoteDuration.Sixteenth &&
+                        lastDur  == NoteDuration.Eighth) {
+                    /* 16th+16th+8th: left-half 16th beam */
+                    firstStem.setPartialSixteenthBeam(Stem.PARTIAL_BEAM_LEFT);
+                }
+            }
         }
     }
 
