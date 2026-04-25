@@ -38,6 +38,7 @@ public class MidiNote implements Comparator<MidiNote> {
     private int channel;     /** The channel */
     private int notenumber;  /** The note, from 0 to 127. Middle C is 60 */
     private int duration;    /** The duration, in pulses */
+    private int soundingDuration; /** The original MIDI sounding duration before RoundDurations extended it; 0 if not extended */
     private boolean tiedToNext; /** True if this note was split at a barline and continues in the next chord */
     private boolean tiedToPrev; /** True if this note is the continuation of a split from the previous chord */
 
@@ -67,6 +68,11 @@ public class MidiNote implements Comparator<MidiNote> {
     public int getDuration() { return duration; }
     public void setDuration(int value) { duration = value; }
 
+    /** The original MIDI sounding duration before RoundDurations extended it.
+     *  Returns 0 if RoundDurations did not extend this note. */
+    public int getSoundingDuration() { return soundingDuration; }
+    public void setSoundingDuration(int value) { soundingDuration = value; }
+
     public boolean isTiedToNext() { return tiedToNext; }
     public void setTiedToNext(boolean value) { tiedToNext = value; }
 
@@ -95,6 +101,7 @@ public class MidiNote implements Comparator<MidiNote> {
         MidiNote copy = new MidiNote(starttime, channel, notenumber, duration);
         copy.tiedToNext = tiedToNext;
         copy.tiedToPrev = tiedToPrev;
+        copy.soundingDuration = soundingDuration;
         return copy;
     }
 

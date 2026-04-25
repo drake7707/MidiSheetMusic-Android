@@ -1932,6 +1932,12 @@ public class MidiFile {
 
                     dur = note1.getDuration();
                 }
+
+                /* Save the original MIDI sounding duration before extending.
+                 * This is used later to detect staccato articulation. */
+                if (dur > note1.getDuration()) {
+                    note1.setSoundingDuration(note1.getDuration());
+                }
                 note1.setDuration(dur);
                 if (track.getNotes().get(i+1).getStartTime() != note1.getStartTime()) {
                     prevNote = note1;
