@@ -361,36 +361,75 @@ public class Staff {
     private void DrawBeatMarkers(Canvas canvas, Paint paint) {
         if (beatInterval <= 0 || measureLength <= 0) return;
 
-        /* Build lookup arrays from note/rest symbols only — BarSymbols are skipped
-         * because a BarSymbol shares its startTime with the first note of the next
-         * measure but sits physically to the left of it; including bars would cause
-         * beat-1 ticks to land on (or before) the bar line instead of on the note.
-         * We store the horizontal centre of each note/rest head so ticks are visually
-         * centred on the note rather than at the left edge of its slot. */
-        int noteCount = 0;
+        /* Build lookup arrays from ChordSymbol, RestSymbol, AND BlankSymbol entries.
+         *
+         * Why include BlankSymbols:
+         *   AlignSymbols() inserts a BlankSymbol into every track at each time slot
+         *   that exists in another track.  A blank's slot width equals the width of
+         *   the corresponding note/chord in the other track.  By including blanks we
+         *   get an exact look-up entry for every beat time that occurs in any track,
+         *   even when this staff (e.g. treble with a whole rest) has no real note at
+         *   that time.  Without blanks, beats with no matching entry fall through to
+         *   the staffEndX fallback — which equals PageWidth in vertical-scroll mode,
+         *   producing a spurious tick at the far-right edge of the row.
+         *
+         * Why exclude BarSymbols:
+         *   A BarSymbol shares its startTime with the first note of the NEXT measure
+         *   but is drawn to the LEFT of that note.  Including it would place beat-1
+         *   ticks on (or before) the bar line rather than on the note head.
+         *
+         * X-position formula:
+         *   For ChordSymbol  – use getNoteXLeft() + NoteWidth/2 (exact right-aligned head centre).
+         *   For BlankSymbol  – use the same right-aligned formula; the slot width equals
+         *                      the corresponding chord's slot width so the virtual head
+         *                      lands at the same x as the real head in the other track.
+         *                      Falls back to slot centre if the slot is narrower than a
+         *                      chord's minimum width (should not normally happen).
+         *   For RestSymbol   – use slot centre (width/2).
+         */
+        int count = 0;
         for (MusicSymbol s : symbols) {
-            if (s instanceof ChordSymbol || s instanceof RestSymbol) noteCount++;
+            if (s instanceof ChordSymbol || s instanceof RestSymbol || s instanceof BlankSymbol)
+                count++;
         }
-        if (noteCount == 0) return;
+        if (count == 0) return;
 
-        int[] noteTimes   = new int[noteCount];
-        int[] noteCenterX = new int[noteCount];
+        /* Minimum slot width needed to contain a note head at its right-aligned position
+         * (chord with no accidentals).  Mirrors ChordSymbol.getMinWidth(). */
+        final int chordMinWidth = 2 * SheetMusic.NoteHeight + SheetMusic.NoteHeight * 3 / 4;
+
+        int[] symTimes   = new int[count];
+        int[] symCenterX = new int[count];
         int xpos = keysigWidth;
-        int idx = 0;
+        int idx  = 0;
         for (MusicSymbol s : symbols) {
             if (s instanceof ChordSymbol) {
                 ChordSymbol chord = (ChordSymbol) s;
-                noteTimes[idx]   = s.getStartTime();
-                noteCenterX[idx] = xpos + chord.getNoteXLeft() + SheetMusic.NoteWidth / 2;
+                symTimes[idx]   = s.getStartTime();
+                symCenterX[idx] = xpos + chord.getNoteXLeft() + SheetMusic.NoteWidth / 2;
+                idx++;
+            } else if (s instanceof BlankSymbol) {
+                symTimes[idx] = s.getStartTime();
+                int w = s.getWidth();
+                /* Apply the same right-aligned note-head formula used by ChordSymbol so
+                 * that the tick lands at the same x as the note head in the other track.
+                 * The formula can be negative when the slot is narrower than a chord's
+                 * minimum, so fall back to the slot centre in that edge case. */
+                if (w >= chordMinWidth) {
+                    symCenterX[idx] = xpos + w - chordMinWidth
+                            + SheetMusic.LineSpace / 4 + SheetMusic.NoteWidth / 2;
+                } else {
+                    symCenterX[idx] = xpos + w / 2;
+                }
                 idx++;
             } else if (s instanceof RestSymbol) {
-                noteTimes[idx]   = s.getStartTime();
-                noteCenterX[idx] = xpos + s.getWidth() / 2;
+                symTimes[idx]   = s.getStartTime();
+                symCenterX[idx] = xpos + s.getWidth() / 2;
                 idx++;
             }
             xpos += s.getWidth();
         }
-        int staffEndX = xpos;
+        int staffEndX = xpos; /* fallback – should only be reached for beats after the last symbol */
 
         int savedColor = paint.getColor();
         float savedStroke = paint.getStrokeWidth();
@@ -402,12 +441,16 @@ public class Staff {
         int tickTop    = ytop - SheetMusic.NoteHeight * 2;
         int tickBottom = tickTop + SheetMusic.NoteHeight * 3 / 4;
 
-        /* Iterate over every beat whose time falls within this staff. */
-        int firstBeat = (starttime / beatInterval) * beatInterval;
+        /* Iterate over every beat whose time falls within this staff.
+         * Cap at symTimes[count-1] so that beats with no lookup anchor (which would
+         * fall through to staffEndX = PageWidth in vertical-scroll mode) are never
+         * drawn, preventing spurious ticks at the row's right edge. */
+        int firstBeat    = (starttime / beatInterval) * beatInterval;
         if (firstBeat < starttime) firstBeat += beatInterval;
+        int lastSymTime  = symTimes[count - 1];
 
-        for (int beatTime = firstBeat; beatTime <= endtime; beatTime += beatInterval) {
-            int beatX = xposForTime(noteTimes, noteCenterX, noteCount, staffEndX, beatTime);
+        for (int beatTime = firstBeat; beatTime <= lastSymTime; beatTime += beatInterval) {
+            int beatX = xposForTime(symTimes, symCenterX, count, staffEndX, beatTime);
             canvas.drawLine(beatX, tickTop, beatX, tickBottom, paint);
         }
 
@@ -415,10 +458,10 @@ public class Staff {
         paint.setStrokeWidth(savedStroke);
     }
 
-    /** Return the x-pixel position (centre of note head) corresponding to the given pulse time.
-     *  If a note/rest starts exactly at {@code time} its centre is returned.
-     *  Otherwise the position is linearly interpolated between the centres of the two
-     *  surrounding notes, giving a proportional position when a beat falls inside a long note.
+    /** Return the x-pixel position (centre of note/rest head) for the given pulse time.
+     *  If a symbol starts exactly at {@code time} its centre is returned.
+     *  Otherwise the position is linearly interpolated between the two symbols that
+     *  bracket the time, giving a proportional position when a beat falls inside a long note.
      */
     private int xposForTime(int[] times, int[] xpos, int n, int endX, int time) {
         for (int i = 0; i < n; i++) {
