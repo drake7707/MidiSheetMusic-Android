@@ -361,18 +361,34 @@ public class Staff {
     private void DrawBeatMarkers(Canvas canvas, Paint paint) {
         if (beatInterval <= 0 || measureLength <= 0) return;
 
-        int n = symbols.size();
-        if (n == 0) return;
+        /* Build lookup arrays from note/rest symbols only — BarSymbols are skipped
+         * because a BarSymbol shares its startTime with the first note of the next
+         * measure but sits physically to the left of it; including bars would cause
+         * beat-1 ticks to land on (or before) the bar line instead of on the note.
+         * We store the horizontal centre of each note/rest head so ticks are visually
+         * centred on the note rather than at the left edge of its slot. */
+        int noteCount = 0;
+        for (MusicSymbol s : symbols) {
+            if (s instanceof ChordSymbol || s instanceof RestSymbol) noteCount++;
+        }
+        if (noteCount == 0) return;
 
-        /* Build parallel arrays of (startTime, xpos) for every symbol so we can
-         * look up the pixel position for any given pulse time. */
-        int[] symTimes = new int[n];
-        int[] symXpos  = new int[n];
+        int[] noteTimes   = new int[noteCount];
+        int[] noteCenterX = new int[noteCount];
         int xpos = keysigWidth;
-        for (int i = 0; i < n; i++) {
-            symTimes[i] = symbols.get(i).getStartTime();
-            symXpos[i]  = xpos;
-            xpos += symbols.get(i).getWidth();
+        int idx = 0;
+        for (MusicSymbol s : symbols) {
+            if (s instanceof ChordSymbol) {
+                ChordSymbol chord = (ChordSymbol) s;
+                noteTimes[idx]   = s.getStartTime();
+                noteCenterX[idx] = xpos + chord.getNoteXLeft() + SheetMusic.NoteWidth / 2;
+                idx++;
+            } else if (s instanceof RestSymbol) {
+                noteTimes[idx]   = s.getStartTime();
+                noteCenterX[idx] = xpos + s.getWidth() / 2;
+                idx++;
+            }
+            xpos += s.getWidth();
         }
         int staffEndX = xpos;
 
@@ -391,7 +407,7 @@ public class Staff {
         if (firstBeat < starttime) firstBeat += beatInterval;
 
         for (int beatTime = firstBeat; beatTime <= endtime; beatTime += beatInterval) {
-            int beatX = xposForTime(symTimes, symXpos, n, staffEndX, beatTime);
+            int beatX = xposForTime(noteTimes, noteCenterX, noteCount, staffEndX, beatTime);
             canvas.drawLine(beatX, tickTop, beatX, tickBottom, paint);
         }
 
@@ -399,11 +415,10 @@ public class Staff {
         paint.setStrokeWidth(savedStroke);
     }
 
-    /** Return the x-pixel position corresponding to the given pulse time.
-     *  If a symbol starts exactly at {@code time} its left edge is returned.
-     *  Otherwise the position is linearly interpolated between the two symbols
-     *  that bracket the time, giving an accurate position even when a beat falls
-     *  inside a long note.
+    /** Return the x-pixel position (centre of note head) corresponding to the given pulse time.
+     *  If a note/rest starts exactly at {@code time} its centre is returned.
+     *  Otherwise the position is linearly interpolated between the centres of the two
+     *  surrounding notes, giving a proportional position when a beat falls inside a long note.
      */
     private int xposForTime(int[] times, int[] xpos, int n, int endX, int time) {
         for (int i = 0; i < n; i++) {
