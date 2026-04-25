@@ -158,6 +158,14 @@
             android:text="@string/show_measures"
             android:padding="12dp" />
 
+        <!-- Show Beat Markers -->
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_show_beat_markers"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/show_beat_markers"
+            android:padding="12dp" />
+
         <!-- Divider -->
         <View
             android:layout_width="match_parent"

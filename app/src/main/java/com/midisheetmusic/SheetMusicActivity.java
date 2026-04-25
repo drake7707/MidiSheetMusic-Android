@@ -86,6 +86,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
     private SwitchCompat switchColorAccidentals;
     private SwitchCompat switchLoopEnable;
     private SwitchCompat switchShowMeasures;
+    private SwitchCompat switchShowBeatMarkers;
     private LinearLayout layoutLoopSubitems;
     private TextView txtLoopArrow;
     private TextView txtLoopStartBadge;
@@ -169,6 +170,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
         switchColorAccidentals = drawerLayout.findViewById(R.id.switch_color_accidentals);
         switchLoopEnable = drawerLayout.findViewById(R.id.switch_loop_enable);
         switchShowMeasures = drawerLayout.findViewById(R.id.switch_show_measures);
+        switchShowBeatMarkers = drawerLayout.findViewById(R.id.switch_show_beat_markers);
         layoutLoopSubitems = drawerLayout.findViewById(R.id.layout_loop_subitems);
         txtLoopArrow = drawerLayout.findViewById(R.id.txt_loop_arrow);
         txtLoopStartBadge = drawerLayout.findViewById(R.id.txt_loop_start_badge);
@@ -180,6 +182,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
         switchColorAccidentals.setChecked(options.colorAccidentals);
         switchLoopEnable.setChecked(options.playMeasuresInLoop);
         switchShowMeasures.setChecked(options.showMeasures);
+        switchShowBeatMarkers.setChecked(options.showBeatMarkers);
         txtLoopStartBadge.setText(String.valueOf(options.playMeasuresInLoopStart + 1));
         txtLoopEndBadge.setText(String.valueOf(options.playMeasuresInLoopEnd + 1));
 
@@ -219,6 +222,11 @@ public class SheetMusicActivity extends MidiHandlingActivity {
 
         switchShowMeasures.setOnCheckedChangeListener((btn, checked) -> {
             options.showMeasures = checked;
+            createSheetMusic(options);
+        });
+
+        switchShowBeatMarkers.setOnCheckedChangeListener((btn, checked) -> {
+            options.showBeatMarkers = checked;
             createSheetMusic(options);
         });
 
@@ -380,6 +388,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
      *  S              - Set loop start to current measure
      *  E              - Set loop end to current measure
      *  L              - Toggle loop on/off
+     *  B              - Toggle beat markers on/off
      *  + / = / Numpad + - Speed up 10%
      *  - / Numpad -   - Speed down 10%
      *
@@ -405,6 +414,7 @@ public class SheetMusicActivity extends MidiHandlingActivity {
             case KeyEvent.KEYCODE_S:
             case KeyEvent.KEYCODE_E:
             case KeyEvent.KEYCODE_L:
+            case KeyEvent.KEYCODE_B:
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_NUMPAD_ADD:
             case KeyEvent.KEYCODE_EQUALS:
@@ -470,6 +480,11 @@ public class SheetMusicActivity extends MidiHandlingActivity {
                 switchLoopEnable.setChecked(options.playMeasuresInLoop);
                 if (sheet != null) sheet.invalBuffer();
                 player.reshadeSheet();
+                return true;
+            case KeyEvent.KEYCODE_B:
+                options.showBeatMarkers = !options.showBeatMarkers;
+                switchShowBeatMarkers.setChecked(options.showBeatMarkers);
+                createSheetMusic(options);
                 return true;
             case KeyEvent.KEYCODE_PLUS:
             case KeyEvent.KEYCODE_NUMPAD_ADD:

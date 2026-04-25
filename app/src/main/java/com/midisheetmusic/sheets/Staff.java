@@ -49,6 +49,7 @@ public class Staff {
     private ClefSymbol clefsym;         /** The left-side Clef symbol */
     private AccidSymbol[] keys;         /** The key signature symbols */
     private boolean showMeasures;       /** If true, show the measure numbers */
+    private boolean showBeatMarkers;    /** If true, show small beat ticks above the staff */
     private boolean showTrackLabels;    /** If true, show track number and instrument label */
     private String trackLabel;          /** The track label text (e.g. "0: Violin") */
     private int keysigWidth;            /** The width of the clef and key signature */
@@ -59,6 +60,7 @@ public class Staff {
     private int starttime;              /** The time (in pulses) of first symbol */
     private int endtime;                /** The time (in pulses) of last symbol */
     private int measureLength;          /** The time (in pulses) of a measure */
+    private int beatInterval;           /** The time (in pulses) between beats */
     private MidiOptions options;        /** The midi options (used for loop highlighting) */
     private String swingLabel;          /** Swing marker text shown above the first staff, or null */
 
@@ -78,6 +80,7 @@ public class Staff {
         this.tracknum = tracknum;
         this.totaltracks = totaltracks;
         showMeasures = (options.showMeasures && tracknum == 0);
+        showBeatMarkers = (options.showBeatMarkers && tracknum == 0);
         showTrackLabels = options.showTrackLabels;
         if (showTrackLabels && options.trackInstrumentNames != null &&
                 originalTrackNum >= 0 && originalTrackNum < options.trackInstrumentNames.length) {
@@ -88,9 +91,13 @@ public class Staff {
         }
         if (options.time != null) {
             measureLength = options.time.getMeasure();
+            beatInterval = options.time.getNumerator() > 0
+                    ? measureLength / options.time.getNumerator() : measureLength;
         }
         else {
             measureLength = options.defaultTime.getMeasure();
+            beatInterval = options.defaultTime.getNumerator() > 0
+                    ? measureLength / options.defaultTime.getNumerator() : measureLength;
         }
         Clef clef = FindClef(symbols);
 
@@ -160,6 +167,9 @@ public class Staff {
         below = Math.max(below, clefsym.getBelowStaff());
         if (showMeasures || swingLabel != null) {
             above = Math.max(above, SheetMusic.NoteHeight * 3);
+        }
+        if (showBeatMarkers && !showMeasures) {
+            above = Math.max(above, SheetMusic.NoteHeight * 2);
         }
         if (showTrackLabels) {
             above = Math.max(above, SheetMusic.NoteHeight * 2);
@@ -335,6 +345,74 @@ public class Staff {
     }
 
 
+    /** Draw small beat-marker ticks above the staff for every beat in each measure,
+     *  including beat 1 (the downbeat).  The downbeat lands on the first note/rest
+     *  of the measure, which sits just after the bar-line symbol — so the tick does
+     *  not overlap the bar line.  Ticks are drawn in gray to keep visual clutter low.
+     *  When measure numbers are also shown they occupy ytop - NoteHeight*3; the beat
+     *  ticks sit one row lower at ytop - NoteHeight*2 so the two annotations never
+     *  overlap.
+     */
+    private void DrawBeatMarkers(Canvas canvas, Paint paint) {
+        if (beatInterval <= 0 || measureLength <= 0) return;
+
+        /* Collect the x-position of the first note/rest in each measure (i.e. the
+         * position just after the bar-line symbol) together with the bar's start time.
+         * The staff's right edge acts as a sentinel for the last measure. */
+        int[] barTimes = new int[symbols.size() + 1];
+        int[] barXpos  = new int[symbols.size() + 1];
+        int barCount = 0;
+        int xpos = keysigWidth;
+        for (MusicSymbol s : symbols) {
+            if (s instanceof BarSymbol) {
+                barTimes[barCount] = s.getStartTime();
+                barXpos[barCount]  = xpos + s.getWidth(); // after the bar line
+                barCount++;
+            }
+            xpos += s.getWidth();
+        }
+        if (barCount == 0) return;
+
+        /* Staff right edge acts as a sentinel for the last measure */
+        int staffEndX = xpos;
+
+        int savedColor = paint.getColor();
+        float savedStroke = paint.getStrokeWidth();
+
+        paint.setColor(Color.GRAY);
+        paint.setStrokeWidth(1);
+
+        /* Beat ticks sit one NoteHeight above the staff top (below measure numbers) */
+        int tickTop    = ytop - SheetMusic.NoteHeight * 2;
+        int tickBottom = tickTop + SheetMusic.NoteHeight * 3 / 4;
+
+        int beatsPerMeasure = measureLength / beatInterval;
+
+        for (int b = 0; b < barCount; b++) {
+            int barTime  = barTimes[b];
+            int barX     = barXpos[b];
+            int nextBarTime = barTime + measureLength;
+            /* nextBarX: start-of-content position of the next measure */
+            int nextBarX = (b + 1 < barCount) ? barXpos[b + 1] : staffEndX;
+
+            /* Draw all beats including beat 1 (the downbeat) */
+            for (int beat = 0; beat < beatsPerMeasure; beat++) {
+                int beatTime = barTime + beat * beatInterval;
+                if (beatTime > endtime) break;
+
+                /* Linear interpolation between measure start positions */
+                float fraction = (float) (beatTime - barTime) / (nextBarTime - barTime);
+                int beatX = barX + Math.round(fraction * (nextBarX - barX));
+
+                canvas.drawLine(beatX, tickTop, beatX, tickBottom, paint);
+            }
+        }
+
+        paint.setColor(savedColor);
+        paint.setStrokeWidth(savedStroke);
+    }
+
+
     /** Draw a semi-transparent red background rectangle over the measures that fall
      *  within the configured loop range, when loop is enabled.  Drawing this first
      *  ensures all notes and staff lines are rendered on top of the tint.
@@ -483,6 +561,9 @@ public class Staff {
 
         if (showMeasures) {
             DrawMeasureNumbers(canvas, paint);
+        }
+        if (showBeatMarkers) {
+            DrawBeatMarkers(canvas, paint);
         }
         if (showTrackLabels) {
             DrawTrackLabel(canvas, paint);
@@ -868,6 +949,9 @@ public class Staff {
                 }
                 if (showMeasures) {
                     DrawMeasureNumbers(canvas, paint);
+                }
+                if (showBeatMarkers) {
+                    DrawBeatMarkers(canvas, paint);
                 }
                 if (lyrics != null) {
                     DrawLyrics(canvas, paint);

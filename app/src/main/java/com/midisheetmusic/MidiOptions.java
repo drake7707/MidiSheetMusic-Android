@@ -44,6 +44,7 @@ public class MidiOptions implements Serializable {
     public int showNoteLetters;      /** Show the letters (A, A#, etc) next to the notes */
     public boolean showLyrics;       /** Show the lyrics under each note */
     public boolean showMeasures;     /** Show the measure numbers for each staff */
+    public boolean showBeatMarkers;  /** Show small beat marker ticks above the staff */
     public int shifttime;            /** Shift note starttimes by the given amount */
     public int transpose;            /** Shift note key up/down by given amount */
     public int key;                  /** Use the given KeySignature (NoteScale) */
@@ -105,6 +106,7 @@ public class MidiOptions implements Serializable {
         twoStaffs = tracks.length == 1; // when there is only 1 track, split the piano track into 2 staffs, otherwise leave as is
         showNoteLetters = NoteNameNone;
         showMeasures = true;
+        showBeatMarkers = false;
         showLyrics = true;
         showTrackLabels = true;
         trackInstrumentNames = new String[num_tracks];
@@ -210,6 +212,7 @@ public class MidiOptions implements Serializable {
             json.put("useFullHeight", useFullHeight);
             json.put("noteColors", jsonColors);
             json.put("showMeasures", showMeasures);
+            json.put("showBeatMarkers", showBeatMarkers);
             json.put("showTrackLabels", showTrackLabels);
             json.put("playMeasuresInLoop", playMeasuresInLoop);
             json.put("playMeasuresInLoopStart", playMeasuresInLoopStart);
@@ -326,6 +329,9 @@ public class MidiOptions implements Serializable {
                 options.countInMeasures = 0;
             }
             options.showMeasures = json.getBoolean("showMeasures");
+            if (json.has("showBeatMarkers")) {
+                options.showBeatMarkers = json.getBoolean("showBeatMarkers");
+            }
             if (json.has("showTrackLabels")) {
                 options.showTrackLabels = json.getBoolean("showTrackLabels");
             }
@@ -382,6 +388,7 @@ public class MidiOptions implements Serializable {
         colorAccidentals = saved.colorAccidentals;
         useFullHeight = saved.useFullHeight;
         showMeasures = saved.showMeasures;
+        showBeatMarkers = saved.showBeatMarkers;
         showTrackLabels = saved.showTrackLabels;
         playMeasuresInLoop = saved.playMeasuresInLoop;
         playMeasuresInLoopStart = saved.playMeasuresInLoopStart;
@@ -447,6 +454,7 @@ public class MidiOptions implements Serializable {
         options.colorAccidentals = colorAccidentals;
         options.useFullHeight = useFullHeight;
         options.showMeasures = showMeasures;
+        options.showBeatMarkers = showBeatMarkers;
         options.showTrackLabels = showTrackLabels;
         if (trackInstrumentNames != null) {
             options.trackInstrumentNames = trackInstrumentNames.clone();
