@@ -486,6 +486,7 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
             case Half:
             case Quarter:
             case Eighth:
+            case Sixteenth:
                 r1 = new RestSymbol(start, dur);
                 result = new RestSymbol[]{ r1 };
                 return result;
@@ -869,10 +870,13 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
                  * 16th-note swing.
                  * Swing off-beat  : gap ≈ eighth × 2/3 (= quarter / 3).
                  * Straight off-beat: gap ≈ eighth / 2  (= quarter / 4). */
-                if (Math.abs(gap - eighth * 2 / 3) <= tolerance) {
-                    swingSixteenths++;
-                } else if (Math.abs(gap - eighth / 2) <= tolerance) {
+                int straight = Math.abs(gap - eighth / 2);
+                int swing = Math.abs(gap - eighth * 2 / 3);
+                if(straight < swing) {
+                    // matches straight better
                     straightSixteenths++;
+                } else {
+                    swingSixteenths++;
                 }
             }
         }

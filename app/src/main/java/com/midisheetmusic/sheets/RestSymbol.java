@@ -85,6 +85,9 @@ public class RestSymbol implements MusicSymbol {
         else if (duration == NoteDuration.Eighth) {
             DrawEighth(canvas, paint, ytop);
         }
+        else if (duration == NoteDuration.Sixteenth) {
+            DrawSixteenth(canvas, paint, ytop);
+        }
         canvas.translate(-SheetMusic.NoteHeight/2, 0);
         canvas.translate(-(getWidth() - getMinWidth()), 0);
     }
@@ -160,6 +163,43 @@ public class RestSymbol implements MusicSymbol {
                         3*SheetMusic.LineSpace/2, y + SheetMusic.LineSpace/2, paint);
         canvas.drawLine(3*SheetMusic.LineSpace/2, y + SheetMusic.LineSpace/2, 
                         3*SheetMusic.LineSpace/4, y + SheetMusic.NoteHeight*2, paint);
+    }
+
+    /** Draw an eighth rest symbol.
+     * @param ytop The ylocation (in pixels) where the top of the staff starts.
+     */
+    public void DrawSixteenth(Canvas canvas, Paint paint, int ytop) {
+        int y = ytop + SheetMusic.NoteHeight - 1;
+        int offset = 2;
+
+        // 8th oval
+        RectF rect = new RectF(offset, y+1,
+                SheetMusic.LineSpace-1 + offset, y+1 + SheetMusic.LineSpace-1);
+        paint.setStyle(Paint.Style.FILL);
+        canvas.drawOval(rect, paint);
+
+        // 16th oval
+        RectF rect2 = new RectF(0, y+1 + SheetMusic.NoteHeight ,
+                SheetMusic.LineSpace-1, y+1 + SheetMusic.LineSpace-1 + SheetMusic.NoteHeight);
+        paint.setStyle(Paint.Style.FILL);
+        canvas.drawOval(rect2, paint);
+
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(1);
+
+
+        // flag for 16th
+        canvas.drawLine((SheetMusic.LineSpace-2)/2 + offset, y + SheetMusic.LineSpace-1 + SheetMusic.LineSpace,
+                2*SheetMusic.LineSpace/2 + offset, y + SheetMusic.LineSpace/2 + SheetMusic.LineSpace, paint);
+
+        // flag for 8th
+        canvas.drawLine((SheetMusic.LineSpace-2)/2, y + SheetMusic.LineSpace-1,
+                3*SheetMusic.LineSpace/2, y + SheetMusic.LineSpace/2, paint);
+
+
+        // stem
+        canvas.drawLine(3*SheetMusic.LineSpace/2, y + SheetMusic.LineSpace/2,
+              3*SheetMusic.LineSpace/4, y + SheetMusic.NoteHeight*3, paint);
     }
 
     public String toString() {
