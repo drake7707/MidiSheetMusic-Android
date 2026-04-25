@@ -653,11 +653,14 @@ public class ChordSymbol implements MusicSymbol {
 
         int yCenter;
         if (stemUp) {
-            /* Dot below the bottommost note head */
+            /* Dot below the bottommost note head.
+             * notedata[0] is guaranteed to be the lowest (bottommost) note:
+             * CreateNoteData() fills notedata in ascending note-number order. */
             int yBottom = ytop + topstaff.Dist(notedata[0].whitenote) * SheetMusic.NoteHeight / 2;
             yCenter = yBottom + SheetMusic.NoteHeight + gap + dotRadius;
         } else {
-            /* Dot above the topmost note head */
+            /* Dot above the topmost note head.
+             * notedata[notedata.length-1] is the highest note for the same reason. */
             int yTop = ytop + topstaff.Dist(notedata[notedata.length - 1].whitenote) * SheetMusic.NoteHeight / 2;
             yCenter = yTop - gap - dotRadius;
         }

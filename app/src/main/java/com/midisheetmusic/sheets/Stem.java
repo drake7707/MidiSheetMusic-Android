@@ -104,9 +104,11 @@ public class Stem {
     public int getPartialSixteenthBeam() { return partialSixteenthBeam; }
     public void setPartialSixteenthBeam(int value) { partialSixteenthBeam = value; }
 
-    /** Convenience: returns true when this stem uses any partial-16th-beam mode. */
+    /** Convenience: returns true when this stem has any partial-16th-beam mode set
+     *  (PARTIAL_BEAM_BOTH_ENDS, PARTIAL_BEAM_RIGHT, or PARTIAL_BEAM_LEFT).
+     */
     public boolean hasMixedOuterSixteenths() {
-        return partialSixteenthBeam == PARTIAL_BEAM_BOTH_ENDS;
+        return partialSixteenthBeam != PARTIAL_BEAM_NONE;
     }
 
     /** Create a new stem.  The top note, bottom note, and direction are 
