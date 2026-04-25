@@ -248,6 +248,8 @@ Improvements introduced in this fork include:
 - **Instrument selection from track row** — tap any track row in settings to open the instrument picker directly; no separate button needed.
 - **File type support** — fixed Android manifest intent filters and added SMF MIME type support so the app opens from any file manager; percussion tracks are shown by default.
 - **Automated CI/CD** — signed release APK and versioned GitHub release created automatically on every version bump; fastlane changelogs generated from git log.
+- **Beat markers** - toggle to show/hide beat markers within a measure
+- **Fixes with note alignment and incomplete measures, missing 16th rests, ...**
 
 For a detailed per-feature history see [CHANGELOG.md](CHANGELOG.md).
 
