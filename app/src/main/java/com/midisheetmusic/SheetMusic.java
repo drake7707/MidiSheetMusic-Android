@@ -377,7 +377,9 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
             /* Create a single chord from the group of midi notes with
              * the same start time.
              */
-            ChordSymbol chord = new ChordSymbol(notegroup, key, time, clef, this);
+            // aligning startTime is important because otherwise it can not match properly with notes or rests in other staffs
+            starttime = time.alignNote(starttime);
+            ChordSymbol chord = new ChordSymbol(notegroup, key, time, clef, this, starttime);
             chords.add(chord);
         }
 
@@ -603,7 +605,7 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
                     }
                 }
                 else {
-                    result.add(new BlankSymbol(start, 0));
+                   result.add(new BlankSymbol(start, 0));
                 }
             }
 

@@ -64,7 +64,7 @@ public class ChordSymbol implements MusicSymbol {
      * of the notes. Use the clef when drawing the chord.
      */
     public ChordSymbol(ArrayList<MidiNote> midinotes, KeySignature key,
-                       TimeSignature time, Clef c, SheetMusic sheet) {
+                       TimeSignature time, Clef c, SheetMusic sheet, int startTime) {
 
         int len = midinotes.size();
         int i;
@@ -73,7 +73,7 @@ public class ChordSymbol implements MusicSymbol {
         clef = c;
         sheetmusic = sheet;
 
-        starttime = midinotes.get(0).getStartTime();
+        starttime = startTime; // midinotes.get(0).getStartTime();
         endtime = midinotes.get(0).getEndTime();
 
         for (i = 0; i < len; i++) {
