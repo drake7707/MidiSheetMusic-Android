@@ -250,6 +250,7 @@ Improvements introduced in this fork include:
 - **Automated CI/CD** — signed release APK and versioned GitHub release created automatically on every version bump; fastlane changelogs generated from git log.
 - **Beat markers** - toggle to show/hide beat markers within a measure
 - **Fixes with note alignment and incomplete measures, missing 16th rests, ...**
+- **Added support for triplets, staccatio, rendering 16-8-16, 8-16-16 and 16-16-8 beams**
 
 For a detailed per-feature history see [CHANGELOG.md](CHANGELOG.md).
 
