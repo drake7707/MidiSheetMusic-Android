@@ -346,34 +346,34 @@ public class Staff {
 
 
     /** Draw small beat-marker ticks above the staff for every beat in each measure,
-     *  including beat 1 (the downbeat).  The downbeat lands on the first note/rest
-     *  of the measure, which sits just after the bar-line symbol — so the tick does
-     *  not overlap the bar line.  Ticks are drawn in gray to keep visual clutter low.
+     *  including beat 1 (the downbeat).  The tick for each beat is positioned at the
+     *  x-coordinate of the note/rest that starts at that beat time; if no symbol starts
+     *  exactly at that time (e.g. a half note spans beats 1–2), the position is
+     *  interpolated between the surrounding symbols so the tick still falls in the
+     *  right horizontal region.  Ticks are drawn in gray to keep visual clutter low.
      *  When measure numbers are also shown they occupy ytop - NoteHeight*3; the beat
      *  ticks sit one row lower at ytop - NoteHeight*2 so the two annotations never
      *  overlap.
+     *
+     *  This method must be called BEFORE symbols (notes/rests) are drawn so that
+     *  the ticks are rendered underneath the notation.
      */
     private void DrawBeatMarkers(Canvas canvas, Paint paint) {
         if (beatInterval <= 0 || measureLength <= 0) return;
 
-        /* Collect the x-position of the first note/rest in each measure (i.e. the
-         * position just after the bar-line symbol) together with the bar's start time.
-         * The staff's right edge acts as a sentinel for the last measure. */
-        int[] barTimes = new int[symbols.size() + 1];
-        int[] barXpos  = new int[symbols.size() + 1];
-        int barCount = 0;
-        int xpos = keysigWidth;
-        for (MusicSymbol s : symbols) {
-            if (s instanceof BarSymbol) {
-                barTimes[barCount] = s.getStartTime();
-                barXpos[barCount]  = xpos + s.getWidth(); // after the bar line
-                barCount++;
-            }
-            xpos += s.getWidth();
-        }
-        if (barCount == 0) return;
+        int n = symbols.size();
+        if (n == 0) return;
 
-        /* Staff right edge acts as a sentinel for the last measure */
+        /* Build parallel arrays of (startTime, xpos) for every symbol so we can
+         * look up the pixel position for any given pulse time. */
+        int[] symTimes = new int[n];
+        int[] symXpos  = new int[n];
+        int xpos = keysigWidth;
+        for (int i = 0; i < n; i++) {
+            symTimes[i] = symbols.get(i).getStartTime();
+            symXpos[i]  = xpos;
+            xpos += symbols.get(i).getWidth();
+        }
         int staffEndX = xpos;
 
         int savedColor = paint.getColor();
@@ -386,30 +386,39 @@ public class Staff {
         int tickTop    = ytop - SheetMusic.NoteHeight * 2;
         int tickBottom = tickTop + SheetMusic.NoteHeight * 3 / 4;
 
-        int beatsPerMeasure = measureLength / beatInterval;
+        /* Iterate over every beat whose time falls within this staff. */
+        int firstBeat = (starttime / beatInterval) * beatInterval;
+        if (firstBeat < starttime) firstBeat += beatInterval;
 
-        for (int b = 0; b < barCount; b++) {
-            int barTime  = barTimes[b];
-            int barX     = barXpos[b];
-            int nextBarTime = barTime + measureLength;
-            /* nextBarX: start-of-content position of the next measure */
-            int nextBarX = (b + 1 < barCount) ? barXpos[b + 1] : staffEndX;
-
-            /* Draw all beats including beat 1 (the downbeat) */
-            for (int beat = 0; beat < beatsPerMeasure; beat++) {
-                int beatTime = barTime + beat * beatInterval;
-                if (beatTime > endtime) break;
-
-                /* Linear interpolation between measure start positions */
-                float fraction = (float) (beatTime - barTime) / (nextBarTime - barTime);
-                int beatX = barX + Math.round(fraction * (nextBarX - barX));
-
-                canvas.drawLine(beatX, tickTop, beatX, tickBottom, paint);
-            }
+        for (int beatTime = firstBeat; beatTime <= endtime; beatTime += beatInterval) {
+            int beatX = xposForTime(symTimes, symXpos, n, staffEndX, beatTime);
+            canvas.drawLine(beatX, tickTop, beatX, tickBottom, paint);
         }
 
         paint.setColor(savedColor);
         paint.setStrokeWidth(savedStroke);
+    }
+
+    /** Return the x-pixel position corresponding to the given pulse time.
+     *  If a symbol starts exactly at {@code time} its left edge is returned.
+     *  Otherwise the position is linearly interpolated between the two symbols
+     *  that bracket the time, giving an accurate position even when a beat falls
+     *  inside a long note.
+     */
+    private int xposForTime(int[] times, int[] xpos, int n, int endX, int time) {
+        for (int i = 0; i < n; i++) {
+            if (times[i] == time) {
+                return xpos[i];
+            }
+            if (times[i] > time) {
+                if (i == 0) return xpos[0];
+                int t0 = times[i - 1], x0 = xpos[i - 1];
+                int t1 = times[i],     x1 = xpos[i];
+                if (t1 == t0) return x0;
+                return x0 + Math.round((float)(time - t0) / (t1 - t0) * (x1 - x0));
+            }
+        }
+        return endX;
     }
 
 
@@ -525,6 +534,11 @@ public class Staff {
         /* Draw the semi-transparent loop region tint first so everything renders on top */
         DrawLoopHighlight(canvas, paint);
 
+        /* Draw beat markers before any notation so notes/rests paint over the ticks */
+        if (showBeatMarkers) {
+            DrawBeatMarkers(canvas, paint);
+        }
+
         int xpos = SheetMusic.LeftMargin + 5;
 
         /* Draw the left side Clef symbol */
@@ -561,9 +575,6 @@ public class Staff {
 
         if (showMeasures) {
             DrawMeasureNumbers(canvas, paint);
-        }
-        if (showBeatMarkers) {
-            DrawBeatMarkers(canvas, paint);
         }
         if (showTrackLabels) {
             DrawTrackLabel(canvas, paint);
@@ -942,6 +953,10 @@ public class Staff {
                 }
                 canvas.translate(-(xpos-2), 0);
 
+                /* Redraw beat markers before the chord so notes paint over the ticks */
+                if (showBeatMarkers) {
+                    DrawBeatMarkers(canvas, paint);
+                }
                 if (prevChord != null) {
                     canvas.translate(prev_xpos, 0);
                     prevChord.Draw(canvas, paint, ytop);
@@ -949,9 +964,6 @@ public class Staff {
                 }
                 if (showMeasures) {
                     DrawMeasureNumbers(canvas, paint);
-                }
-                if (showBeatMarkers) {
-                    DrawBeatMarkers(canvas, paint);
                 }
                 if (lyrics != null) {
                     DrawLyrics(canvas, paint);
