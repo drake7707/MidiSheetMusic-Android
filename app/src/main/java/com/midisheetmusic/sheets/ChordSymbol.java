@@ -876,15 +876,27 @@ public class ChordSymbol implements MusicSymbol {
         /* A 3-chord group of Sixteenth + Eighth + Sixteenth may be beamed
          * together with partial 16th-note beams at the outer positions. */
         boolean mixed_16_8_16 = false;
+        boolean mixed_8_16_16 = false;
+        boolean mixed_16_16_8 = false;
         if (numChords == 3) {
             Stem midStem = chords[1].getStem();
-            if (midStem != null &&
-                dur  == NoteDuration.Sixteenth &&
-                midStem.getDuration() == NoteDuration.Eighth &&
-                dur2 == NoteDuration.Sixteenth) {
-                mixed_16_8_16 = true;
+            if (midStem != null) {
+                if (dur  == NoteDuration.Sixteenth &&
+                    midStem.getDuration() == NoteDuration.Eighth &&
+                    dur2 == NoteDuration.Sixteenth) {
+                    mixed_16_8_16 = true;
+                } else if (dur  == NoteDuration.Eighth &&
+                           midStem.getDuration() == NoteDuration.Sixteenth &&
+                           dur2 == NoteDuration.Sixteenth) {
+                    mixed_8_16_16 = true;
+                } else if (dur  == NoteDuration.Sixteenth &&
+                           midStem.getDuration() == NoteDuration.Sixteenth &&
+                           dur2 == NoteDuration.Eighth) {
+                    mixed_16_16_8 = true;
+                }
             }
         }
+        boolean anyMixed3 = mixed_16_8_16 || mixed_8_16_16 || mixed_16_16_8;
 
         if (dur == NoteDuration.Whole || dur == NoteDuration.Half ||
             dur == NoteDuration.DottedHalf || dur == NoteDuration.Quarter ||
@@ -943,7 +955,7 @@ public class ChordSymbol implements MusicSymbol {
             boolean valid = (dur == NoteDuration.Triplet) ||
                           (dur == NoteDuration.Eighth &&
                            time.getNumerator() == 12 && time.getDenominator() == 8) ||
-                          mixed_16_8_16;
+                          anyMixed3;
             if (!valid) {
                 return false;
             }
@@ -972,7 +984,7 @@ public class ChordSymbol implements MusicSymbol {
                 return false;
             if (chord.getStem() == null)
                 return false;
-            if (chord.getStem().getDuration() != dur && !dotted8_to_16 && !mixed_16_8_16)
+            if (chord.getStem().getDuration() != dur && !dotted8_to_16 && !anyMixed3)
                 return false;
             if (chord.getStem().IsBeam())
                 return false;
@@ -1073,13 +1085,28 @@ public class ChordSymbol implements MusicSymbol {
             firstStem.setTriplet(true);
         }
 
-        /* For a 16th+8th+16th mixed-duration group, flag the leading stem so
-         * DrawHorizBarStem draws short partial 16th beams at the outer ends. */
-        if (chords.length == 3 && firstDur == NoteDuration.Sixteenth) {
+        /* For mixed-duration 3-chord groups, set the partial secondary-beam mode
+         * on the leading stem so DrawHorizBarStem renders the correct 16th flag. */
+        if (chords.length == 3) {
             Stem midStem = chords[1].getStem();
-            if (midStem != null && midStem.getDuration() == NoteDuration.Eighth &&
-                    chords[chords.length - 1].getStem().getDuration() == NoteDuration.Sixteenth) {
-                firstStem.setHasMixedOuterSixteenths(true);
+            NoteDuration lastDur = lastStem.getDuration();
+            if (midStem != null) {
+                if (firstDur == NoteDuration.Sixteenth &&
+                        midStem.getDuration() == NoteDuration.Eighth &&
+                        lastDur  == NoteDuration.Sixteenth) {
+                    /* 16th+8th+16th: short stubs at each outer end */
+                    firstStem.setPartialSixteenthBeam(Stem.PARTIAL_BEAM_BOTH_ENDS);
+                } else if (firstDur == NoteDuration.Eighth &&
+                        midStem.getDuration() == NoteDuration.Sixteenth &&
+                        lastDur  == NoteDuration.Sixteenth) {
+                    /* 8th+16th+16th: right-half 16th beam */
+                    firstStem.setPartialSixteenthBeam(Stem.PARTIAL_BEAM_RIGHT);
+                } else if (firstDur == NoteDuration.Sixteenth &&
+                        midStem.getDuration() == NoteDuration.Sixteenth &&
+                        lastDur  == NoteDuration.Eighth) {
+                    /* 16th+16th+8th: left-half 16th beam */
+                    firstStem.setPartialSixteenthBeam(Stem.PARTIAL_BEAM_LEFT);
+                }
             }
         }
     }
