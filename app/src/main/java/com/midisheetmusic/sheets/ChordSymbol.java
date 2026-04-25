@@ -33,6 +33,14 @@ import com.midisheetmusic.TimeSignature;
  * quarter note, and another is an eighth note).
  */
 public class ChordSymbol implements MusicSymbol {
+    /** A note is considered staccato when its sounding duration is at most
+     *  1/STACCATO_RATIO of the notated (rounded) duration.  A ratio of 2
+     *  means the note must sound for ≤ 50% of its written value. */
+    private static final int STACCATO_RATIO = 2;
+
+    /** Radius (in pixels) of the staccato dot drawn next to a note head. */
+    private static final int STACCATO_DOT_RADIUS = 2;
+
     private Clef clef;             /** Which clef the chord is being drawn in */
     private int starttime;         /** The time (in pulses) the notes occurs at */
     private int endtime;           /** The starttime plus the longest note duration */
@@ -189,7 +197,7 @@ public class ChordSymbol implements MusicSymbol {
             eligible++;
             int sounding = note.getSoundingDuration();
             int notated  = note.getDuration();
-            if (sounding > 0 && sounding * 2 <= notated) {
+            if (sounding > 0 && sounding * STACCATO_RATIO <= notated) {
                 staccatoCount++;
             }
         }
@@ -633,7 +641,7 @@ public class ChordSymbol implements MusicSymbol {
      * @param topstaff The white note at the top of the staff.
      */
     private void DrawStaccato(Canvas canvas, Paint paint, int ytop, WhiteNote topstaff) {
-        final int dotRadius = 2;
+        final int dotRadius = STACCATO_DOT_RADIUS;
         final int gap = SheetMusic.LineSpace / 2;
 
         /* x-centre: same as note head centre */

@@ -56,7 +56,7 @@ public class Stem {
     private boolean receiver_in_pair;  /** This stem is the receiver of a horizontal
                                     * beam stem from another chord. */
     private boolean tripletBeam;    /** True if this stem is the start of a beamed triplet group */
-    private boolean hasMixedOuterSixteenths; /** True when this is the leading stem of a 16th+8th+16th beam group */
+    private boolean mixedOuterSixteenths; /** True when this is the leading stem of a 16th+8th+16th beam group */
 
     /** Get/Set the direction of the stem (Up or Down) */
     public int getDirection() { return direction; }
@@ -94,8 +94,8 @@ public class Stem {
      *  beam group.  When true, DrawHorizBarStem draws partial 16th beams at the
      *  outer positions instead of a single full-width 16th beam.
      */
-    public boolean hasMixedOuterSixteenths() { return hasMixedOuterSixteenths; }
-    public void setHasMixedOuterSixteenths(boolean value) { hasMixedOuterSixteenths = value; }
+    public boolean hasMixedOuterSixteenths() { return mixedOuterSixteenths; }
+    public void setHasMixedOuterSixteenths(boolean value) { mixedOuterSixteenths = value; }
 
     /** Create a new stem.  The top note, bottom note, and direction are 
      * needed for drawing the vertical line of the stem.  The duration is 
@@ -120,7 +120,7 @@ public class Stem {
         width_to_pair = 0;
         receiver_in_pair = false;
         tripletBeam = false;
-        hasMixedOuterSixteenths = false;
+        mixedOuterSixteenths = false;
     }
 
     /** Calculate the vertical position (white note key) where 
@@ -395,7 +395,7 @@ public class Stem {
             if (duration == NoteDuration.Sixteenth ||
                 duration == NoteDuration.ThirtySecond) {
 
-                if (hasMixedOuterSixteenths && xend > xstart) {
+                if (mixedOuterSixteenths && xend > xstart) {
                     /* 16th+8th+16th mixed beam: draw a short partial 16th beam at
                      * each outer position rather than a continuous full-width beam. */
                     int partialLen = SheetMusic.NoteHeight;
@@ -454,7 +454,7 @@ public class Stem {
             if (duration == NoteDuration.Sixteenth ||
                 duration == NoteDuration.ThirtySecond) {
 
-                if (hasMixedOuterSixteenths && xend > xstart) {
+                if (mixedOuterSixteenths && xend > xstart) {
                     /* 16th+8th+16th mixed beam: draw a short partial 16th beam at
                      * each outer position rather than a continuous full-width beam. */
                     int partialLen = SheetMusic.NoteHeight;
