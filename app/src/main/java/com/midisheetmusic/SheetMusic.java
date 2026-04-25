@@ -695,21 +695,21 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
     }
 
 
-    /** Split notes that cross (or land within a tick of) a measure boundary into
-     *  two adjacent tied notes of the correct duration.
+    /** Split notes that cross a measure boundary into two adjacent tied notes of
+     *  the correct duration.
      *
      *  Two enhancements over a plain barline-crossing check:
      *
      *  1. Off-by-one snap: MIDI DAWs frequently place Note-Off events 1–2 ticks
      *     before the bar to avoid overlap with the next note.  If a note ends
      *     within {@code END_TOLERANCE} ticks of a barline it is silently extended
-     *     to reach that barline so that the split logic fires correctly.
+     *     to reach that barline exactly.  Notes that end exactly at (or are snapped
+     *     to) the barline are entirely within the measure and are NOT split.
      *
-     *  2. Off-beat split: when a note does not start on a quarter-note beat and
-     *     its (possibly snapped) end reaches or crosses the barline, we split it
-     *     at the next quarter-note beat rather than at the barline itself.  This
-     *     converts e.g. a half note starting on the "and" of a beat into the
-     *     standard notation of (8th to beat) + (half note from beat), tied.
+     *  2. Off-beat split: when a note starts off a quarter-note beat AND genuinely
+     *     extends past the barline, we split it at the next quarter-note beat rather
+     *     than at the barline itself.  This converts e.g. a half note starting on
+     *     the "and" of a beat into (8th to beat) + (half note from beat), tied.
      *     A minimum fragment length of quarter/8 is enforced so that notes
      *     starting only a few ticks before a beat are left intact.
      */
@@ -749,7 +749,7 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
 
                 /* ---- Step 2: determine split point ---- */
                 int splitPoint = -1;
-                if (noteEnd >= measureEnd) {
+                if (noteEnd > measureEnd) {
                     if (noteStart % quarter != 0) {
                         /* Note starts off a quarter-beat: split at the next beat so
                          * that the leading fragment can be expressed as a clean note
