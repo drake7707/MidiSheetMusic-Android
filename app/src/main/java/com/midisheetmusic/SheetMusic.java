@@ -377,7 +377,9 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
             /* Create a single chord from the group of midi notes with
              * the same start time.
              */
-            ChordSymbol chord = new ChordSymbol(notegroup, key, time, clef, this);
+            // aligning startTime is important because otherwise it can not match properly with notes or rests in other staffs
+            starttime = time.alignNote(starttime);
+            ChordSymbol chord = new ChordSymbol(notegroup, key, time, clef, this, starttime);
             chords.add(chord);
         }
 
@@ -479,36 +481,62 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
             return null;
 
         NoteDuration dur = time.GetNoteDuration(end - start);
+        float beat = time.getBeatInMeasure(start);
         switch (dur) {
             case Whole:
             case Half:
             case Quarter:
             case Eighth:
+            case Sixteenth:
                 r1 = new RestSymbol(start, dur);
                 result = new RestSymbol[]{ r1 };
                 return result;
 
             case DottedHalf:
-                r1 = new RestSymbol(start, NoteDuration.Half);
-                r2 = new RestSymbol(start + time.getQuarter()*2, 
-                                    NoteDuration.Quarter);
-                result = new RestSymbol[]{ r1, r2 };
-                return result;
+                if(beat != Math.floor(beat)) { // if not aligned on the beat, do the 4th first, then the half
+                    r1 = new RestSymbol(start, NoteDuration.Quarter);
+                    r2 = new RestSymbol(start + time.getQuarter(),
+                            NoteDuration.Half);
+                    result = new RestSymbol[]{r1, r2};
+                    return result;
+                } else {
+                    r1 = new RestSymbol(start, NoteDuration.Half);
+                    r2 = new RestSymbol(start + time.getQuarter() * 2,
+                            NoteDuration.Quarter);
+                    result = new RestSymbol[]{r1, r2};
+                    return result;
+                }
 
             case DottedQuarter:
-                r1 = new RestSymbol(start, NoteDuration.Quarter);
-                r2 = new RestSymbol(start + time.getQuarter(), 
-                                    NoteDuration.Eighth);
-                result = new RestSymbol[]{ r1, r2 };
-                return result; 
+                if(beat != Math.floor(beat)) { // if not aligned on the beat, do the 8th first, then the 4th
+                    r1 = new RestSymbol(start, NoteDuration.Eighth);
+                    r2 = new RestSymbol(start + time.getQuarter() /2,
+                            NoteDuration.Quarter);
+                    result = new RestSymbol[]{r1, r2};
+                    return result;
+                } else {
+                    r1 = new RestSymbol(start, NoteDuration.Quarter);
+                    r2 = new RestSymbol(start + time.getQuarter(),
+                            NoteDuration.Eighth);
+                    result = new RestSymbol[]{r1, r2};
+                    return result;
+                }
 
             case DottedEighth:
-                r1 = new RestSymbol(start, NoteDuration.Eighth);
-                r2 = new RestSymbol(start + time.getQuarter()/2, 
-                                    NoteDuration.Sixteenth);
-                result = new RestSymbol[]{ r1, r2 };
-                return result;
 
+                if(beat != Math.floor(beat)) { // if not aligned on the beat, do the 16th first, then the 8th
+                    r1 = new RestSymbol(start, NoteDuration.Sixteenth);
+                    r2 = new RestSymbol(start + time.getQuarter() / 4,
+                            NoteDuration.Eighth);
+                    result = new RestSymbol[]{r1, r2};
+                    return result;
+                } else {
+                    r1 = new RestSymbol(start, NoteDuration.Eighth);
+                    r2 = new RestSymbol(start + time.getQuarter() / 2,
+                            NoteDuration.Sixteenth);
+                    result = new RestSymbol[]{r1, r2};
+                    return result;
+                }
             default:
                 return null;
         }
@@ -603,7 +631,7 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
                     }
                 }
                 else {
-                    result.add(new BlankSymbol(start, 0));
+                   result.add(new BlankSymbol(start, 0));
                 }
             }
 
@@ -867,10 +895,13 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
                  * 16th-note swing.
                  * Swing off-beat  : gap ≈ eighth × 2/3 (= quarter / 3).
                  * Straight off-beat: gap ≈ eighth / 2  (= quarter / 4). */
-                if (Math.abs(gap - eighth * 2 / 3) <= tolerance) {
-                    swingSixteenths++;
-                } else if (Math.abs(gap - eighth / 2) <= tolerance) {
+                int straight = Math.abs(gap - eighth / 2);
+                int swing = Math.abs(gap - eighth * 2 / 3);
+                if(straight < swing) {
+                    // matches straight better
                     straightSixteenths++;
+                } else {
+                    swingSixteenths++;
                 }
             }
         }

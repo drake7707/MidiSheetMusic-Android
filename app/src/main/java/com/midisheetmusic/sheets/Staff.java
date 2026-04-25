@@ -49,6 +49,7 @@ public class Staff {
     private ClefSymbol clefsym;         /** The left-side Clef symbol */
     private AccidSymbol[] keys;         /** The key signature symbols */
     private boolean showMeasures;       /** If true, show the measure numbers */
+    private boolean showBeatMarkers;    /** If true, show small beat ticks above the staff */
     private boolean showTrackLabels;    /** If true, show track number and instrument label */
     private String trackLabel;          /** The track label text (e.g. "0: Violin") */
     private int keysigWidth;            /** The width of the clef and key signature */
@@ -59,6 +60,7 @@ public class Staff {
     private int starttime;              /** The time (in pulses) of first symbol */
     private int endtime;                /** The time (in pulses) of last symbol */
     private int measureLength;          /** The time (in pulses) of a measure */
+    private int beatInterval;           /** The time (in pulses) between beats */
     private MidiOptions options;        /** The midi options (used for loop highlighting) */
     private String swingLabel;          /** Swing marker text shown above the first staff, or null */
 
@@ -78,6 +80,7 @@ public class Staff {
         this.tracknum = tracknum;
         this.totaltracks = totaltracks;
         showMeasures = (options.showMeasures && tracknum == 0);
+        showBeatMarkers = (options.showBeatMarkers && tracknum == 0);
         showTrackLabels = options.showTrackLabels;
         if (showTrackLabels && options.trackInstrumentNames != null &&
                 originalTrackNum >= 0 && originalTrackNum < options.trackInstrumentNames.length) {
@@ -88,9 +91,13 @@ public class Staff {
         }
         if (options.time != null) {
             measureLength = options.time.getMeasure();
+            beatInterval = options.time.getNumerator() > 0
+                    ? measureLength / options.time.getNumerator() : measureLength;
         }
         else {
             measureLength = options.defaultTime.getMeasure();
+            beatInterval = options.defaultTime.getNumerator() > 0
+                    ? measureLength / options.defaultTime.getNumerator() : measureLength;
         }
         Clef clef = FindClef(symbols);
 
@@ -160,6 +167,9 @@ public class Staff {
         below = Math.max(below, clefsym.getBelowStaff());
         if (showMeasures || swingLabel != null) {
             above = Math.max(above, SheetMusic.NoteHeight * 3);
+        }
+        if (showBeatMarkers && !showMeasures) {
+            above = Math.max(above, SheetMusic.NoteHeight * 2);
         }
         if (showTrackLabels) {
             above = Math.max(above, SheetMusic.NoteHeight * 2);
@@ -335,6 +345,143 @@ public class Staff {
     }
 
 
+    /** Draw small beat-marker ticks above the staff for every beat in each measure,
+     *  including beat 1 (the downbeat).  The tick for each beat is positioned at the
+     *  x-coordinate of the note/rest that starts at that beat time; if no symbol starts
+     *  exactly at that time (e.g. a half note spans beats 1–2), the position is
+     *  interpolated between the surrounding symbols so the tick still falls in the
+     *  right horizontal region.  Ticks are drawn in gray to keep visual clutter low.
+     *  When measure numbers are also shown they occupy ytop - NoteHeight*3; the beat
+     *  ticks sit one row lower at ytop - NoteHeight*2 so the two annotations never
+     *  overlap.
+     *
+     *  This method must be called BEFORE symbols (notes/rests) are drawn so that
+     *  the ticks are rendered underneath the notation.
+     */
+    private void DrawBeatMarkers(Canvas canvas, Paint paint) {
+        if (beatInterval <= 0 || measureLength <= 0) return;
+
+        /* Build lookup arrays from ChordSymbol, RestSymbol, AND BlankSymbol entries.
+         *
+         * Why include BlankSymbols:
+         *   AlignSymbols() inserts a BlankSymbol into every track at each time slot
+         *   that exists in another track.  A blank's slot width equals the width of
+         *   the corresponding note/chord in the other track.  By including blanks we
+         *   get an exact look-up entry for every beat time that occurs in any track,
+         *   even when this staff (e.g. treble with a whole rest) has no real note at
+         *   that time.  Without blanks, beats with no matching entry fall through to
+         *   the staffEndX fallback — which equals PageWidth in vertical-scroll mode,
+         *   producing a spurious tick at the far-right edge of the row.
+         *
+         * Why exclude BarSymbols:
+         *   A BarSymbol shares its startTime with the first note of the NEXT measure
+         *   but is drawn to the LEFT of that note.  Including it would place beat-1
+         *   ticks on (or before) the bar line rather than on the note head.
+         *
+         * X-position formula:
+         *   For ChordSymbol  – use getNoteXLeft() + NoteWidth/2 (exact right-aligned head centre).
+         *   For BlankSymbol  – use the same right-aligned formula; the slot width equals
+         *                      the corresponding chord's slot width so the virtual head
+         *                      lands at the same x as the real head in the other track.
+         *                      Falls back to slot centre if the slot is narrower than a
+         *                      chord's minimum width (should not normally happen).
+         *   For RestSymbol   – use the same chord-centre formula as BlankSymbol.
+         *                      RestSymbol.getMinWidth() (20px) is 2px narrower than a plain
+         *                      ChordSymbol (22px), so slot-centre (width/2) gives xpos+11
+         *                      while the chord head in the other track is at xpos+6.  Using
+         *                      the chord-centre formula aligns beat-1 ticks with the note
+         *                      head that sits directly below the rest in the other staff.
+         */
+        int count = 0;
+        for (MusicSymbol s : symbols) {
+            if (s instanceof ChordSymbol || s instanceof RestSymbol || s instanceof BlankSymbol)
+                count++;
+        }
+        if (count == 0) return;
+
+        /* Minimum slot width needed to contain a note head at its right-aligned position
+         * (chord with no accidentals).  Mirrors ChordSymbol.getMinWidth(). */
+        final int chordMinWidth = 2 * SheetMusic.NoteHeight + SheetMusic.NoteHeight * 3 / 4;
+
+        int[] symTimes   = new int[count];
+        int[] symCenterX = new int[count];
+        int xpos = keysigWidth;
+        int idx  = 0;
+        for (MusicSymbol s : symbols) {
+            if (s instanceof ChordSymbol) {
+                ChordSymbol chord = (ChordSymbol) s;
+                symTimes[idx]   = s.getStartTime();
+                symCenterX[idx] = xpos + chord.getNoteXLeft() + SheetMusic.NoteWidth / 2;
+                idx++;
+            } else if (s instanceof BlankSymbol || s instanceof RestSymbol) {
+                symTimes[idx] = s.getStartTime();
+                int w = s.getWidth();
+                /* Apply the same right-aligned note-head formula used by ChordSymbol.
+                 * RestSymbol.getMinWidth() is 2px narrower than a plain chord, so using
+                 * slot-centre (w/2) displaces the tick from the chord head in the other
+                 * track by ~5px.  The chord-centre formula corrects this.
+                 * Falls back to slot centre for abnormally narrow slots. */
+                if (w >= chordMinWidth) {
+                    symCenterX[idx] = xpos + w - chordMinWidth
+                            + SheetMusic.LineSpace / 4 + SheetMusic.NoteWidth / 2;
+                } else {
+                    symCenterX[idx] = xpos + w / 2;
+                }
+                idx++;
+            }
+            xpos += s.getWidth();
+        }
+        int staffEndX = xpos; /* fallback – should only be reached for beats after the last symbol */
+
+        int savedColor = paint.getColor();
+        float savedStroke = paint.getStrokeWidth();
+
+        paint.setColor(Color.GRAY);
+        paint.setStrokeWidth(1);
+
+        /* Beat ticks sit one NoteHeight above the staff top (below measure numbers) */
+        int tickTop    = ytop - SheetMusic.NoteHeight * 2;
+        int tickBottom = tickTop + SheetMusic.NoteHeight * 3 / 4;
+
+        /* Iterate over every beat whose time falls within this staff.
+         * Cap at symTimes[count-1] so that beats with no lookup anchor (which would
+         * fall through to staffEndX = PageWidth in vertical-scroll mode) are never
+         * drawn, preventing spurious ticks at the row's right edge. */
+        int firstBeat    = (starttime / beatInterval) * beatInterval;
+        if (firstBeat < starttime) firstBeat += beatInterval;
+        int lastSymTime  = symTimes[count - 1];
+
+        for (int beatTime = firstBeat; beatTime <= lastSymTime; beatTime += beatInterval) {
+            int beatX = xposForTime(symTimes, symCenterX, count, staffEndX, beatTime);
+            canvas.drawLine(beatX, tickTop, beatX, tickBottom, paint);
+        }
+
+        paint.setColor(savedColor);
+        paint.setStrokeWidth(savedStroke);
+    }
+
+    /** Return the x-pixel position (centre of note/rest head) for the given pulse time.
+     *  If a symbol starts exactly at {@code time} its centre is returned.
+     *  Otherwise the position is linearly interpolated between the two symbols that
+     *  bracket the time, giving a proportional position when a beat falls inside a long note.
+     */
+    private int xposForTime(int[] times, int[] xpos, int n, int endX, int time) {
+        for (int i = 0; i < n; i++) {
+            if (times[i] == time) {
+                return xpos[i];
+            }
+            if (times[i] > time) {
+                if (i == 0) return xpos[0];
+                int t0 = times[i - 1], x0 = xpos[i - 1];
+                int t1 = times[i],     x1 = xpos[i];
+                if (t1 == t0) return x0;
+                return x0 + Math.round((float)(time - t0) / (t1 - t0) * (x1 - x0));
+            }
+        }
+        return endX;
+    }
+
+
     /** Draw a semi-transparent red background rectangle over the measures that fall
      *  within the configured loop range, when loop is enabled.  Drawing this first
      *  ensures all notes and staff lines are rendered on top of the tint.
@@ -446,6 +593,11 @@ public class Staff {
 
         /* Draw the semi-transparent loop region tint first so everything renders on top */
         DrawLoopHighlight(canvas, paint);
+
+        /* Draw beat markers before any notation so notes/rests paint over the ticks */
+        if (showBeatMarkers) {
+            DrawBeatMarkers(canvas, paint);
+        }
 
         int xpos = SheetMusic.LeftMargin + 5;
 
@@ -861,6 +1013,10 @@ public class Staff {
                 }
                 canvas.translate(-(xpos-2), 0);
 
+                /* Redraw beat markers before the chord so notes paint over the ticks */
+                if (showBeatMarkers) {
+                    DrawBeatMarkers(canvas, paint);
+                }
                 if (prevChord != null) {
                     canvas.translate(prev_xpos, 0);
                     prevChord.Draw(canvas, paint, ytop);

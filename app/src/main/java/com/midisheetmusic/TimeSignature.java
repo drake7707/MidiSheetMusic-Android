@@ -80,6 +80,23 @@ public class TimeSignature implements Serializable {
         return time / measure;
     }
 
+    /** Align note start times to 32th notes */
+    public int alignNote(int startTime) {
+        int minNoteAlignment = quarternote/4; // align on 32th notes
+        return ((int)(startTime / minNoteAlignment)) * minNoteAlignment;
+    }
+
+    public float getBeatInMeasure(int startTime) {
+        int beat;
+        if (denominator < 4)
+            beat = quarternote * 2;
+        else
+            beat = quarternote / (denominator/4);
+
+        int offsetInMeasure = startTime % getMeasure();
+        return offsetInMeasure / (float)beat;
+    }
+
     /** Given a duration in pulses, return the closest note duration. */
     public NoteDuration GetNoteDuration(int duration) {
         int whole = quarternote * 4;

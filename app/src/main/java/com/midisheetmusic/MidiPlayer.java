@@ -1153,6 +1153,10 @@ public class MidiPlayer extends LinearLayout {
         sheet.ShadeNotes((int) currentPulseTime, (int) prevPulseTime, SheetMusic.DontScroll);
     }
 
+    public boolean isPlaying() {
+        return playstate == playing;
+    }
+
     public boolean isInMidiMode() {
         return playstate == midi;
     }
