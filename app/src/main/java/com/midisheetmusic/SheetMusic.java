@@ -1291,10 +1291,10 @@ public class SheetMusic extends SurfaceView implements SurfaceHolder.Callback, S
             }
             SurfaceHolder holder = getHolder();
             Canvas canvas = holder.lockCanvas();
+            if (canvas == null) {
+                return;
+            }
             try {
-                if (canvas == null) {
-                    return;
-                }
                 doDraw(canvas);
             } finally {
                 holder.unlockCanvasAndPost(canvas);
